@@ -1,0 +1,989 @@
+<!doctype html>
+<html lang="fr" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Phasmophobia 2026 — Outil d'identification</title>
+<style>
+/* ── THÈMES ── */
+:root{--bg:#0c0f14;--card:#151a22;--card2:#1d2430;--txt:#f1f5f9;--muted:#aab4c0;--accent:#7dd3fc;--bad:#fb7185;--ok:#86efac;--warn:#facc15;--border:#2a3442;--hunt-bg:#1a0505;--hunt-border:#dc2626;}
+[data-theme="torch"]{--bg:#f5f0e8;--card:#fff;--card2:#f0ece0;--txt:#1a1a1a;--muted:#555;--accent:#1d4ed8;--bad:#dc2626;--ok:#15803d;--warn:#b45309;--border:#d0c8b0;--hunt-bg:#fff0f0;--hunt-border:#dc2626;}
+[data-theme="violet"]{--bg:#0d0a1a;--card:#16112a;--card2:#1e1838;--txt:#f1e8ff;--muted:#a78bca;--accent:#c084fc;--bad:#fb7185;--ok:#86efac;--warn:#facc15;--border:#3d2a6e;--hunt-bg:#1a0520;--hunt-border:#c084fc;}
+
+/* ── BASE ── */
+*{box-sizing:border-box;transition:background-color .2s,border-color .2s,color .15s;}
+body{margin:0;background:var(--bg);color:var(--txt);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;padding-bottom:80px;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.5;}}
+@keyframes ghostIn{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:none;}}
+@keyframes ghostOut{to{opacity:0;transform:translateY(-4px);max-height:0;margin:0;padding:0;overflow:hidden;}}
+@keyframes slideUp{from{transform:translateY(100%);opacity:0;}to{transform:translateY(0);opacity:1;}}
+@keyframes fadeIn{from{opacity:0;}to{opacity:1;}}
+
+/* ── HEADER ── */
+header{position:sticky;top:0;z-index:10;background:rgba(12,15,20,.96);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:8px 14px;}
+[data-theme="torch"] header{background:rgba(245,240,232,.97);}
+[data-theme="violet"] header{background:rgba(13,10,26,.96);}
+.header-row{display:flex;align-items:center;justify-content:space-between;gap:6px;}
+h1{font-size:17px;margin:0;}
+.sub{color:var(--muted);font-size:10px;}
+#chrono-display{font-size:19px;font-weight:900;color:var(--warn);font-variant-numeric:tabular-nums;min-width:48px;text-align:center;cursor:pointer;}
+#chrono-display.running{color:var(--ok);}
+#chrono-display.danger{color:var(--bad);animation:pulse 1s infinite;}
+.header-right{display:flex;align-items:center;gap:5px;}
+.theme-btns{display:flex;gap:2px;}
+.theme-btn{border:1px solid var(--border);border-radius:7px;padding:3px 6px;background:var(--card2);color:var(--txt);font-size:11px;min-height:28px;cursor:pointer;}
+.theme-btn.active{border-color:var(--accent);color:var(--accent);}
+
+/* ── LAYOUT ── */
+main{padding:10px;max-width:1100px;margin:auto;}
+.grid{display:grid;gap:10px;}
+@media(min-width:850px){.grid{grid-template-columns:400px 1fr}}
+.card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:12px;box-shadow:0 4px 20px rgba(0,0,0,.18);}
+h2{font-size:15px;margin:0 0 8px;}
+h3{font-size:12px;margin:10px 0 4px;color:var(--accent);text-transform:uppercase;letter-spacing:.04em;}
+
+/* ── BOUTONS ── */
+.buttons{display:flex;flex-wrap:wrap;gap:5px;}
+@media(max-width:400px){.buttons{display:grid;grid-template-columns:1fr 1fr;gap:4px;}}
+button{border:1px solid var(--border);border-radius:999px;padding:9px 12px;background:var(--card2);color:var(--txt);font-weight:650;font-size:13px;min-height:44px;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:transform .1s,background .15s,border-color .15s;}
+button:active{transform:scale(.95);}
+button.on{background:#0e7490;border-color:#38bdf8;}
+button.no{background:#7f1d1d;border-color:#fb7185;}
+button.forced-on{background:#78350f;border-color:#d97706;color:#fde68a;}
+button.small{font-size:11px;padding:5px 9px;min-height:30px;}
+button.pill{border-radius:10px;padding:8px 13px;min-height:36px;font-size:12px;}
+button.pill.active{background:#0e7490;border-color:#38bdf8;}
+[data-theme="violet"] button.pill.active{background:#5b21b6;border-color:#c084fc;}
+button.wide{width:100%;border-radius:12px;padding:11px;font-size:13px;font-weight:700;}
+button.wide.primary{background:#0e7490;border-color:#38bdf8;color:#fff;}
+button.wide.danger-btn{background:#7f1d1d;border-color:#ef4444;color:#fff;}
+
+.row{display:flex;gap:6px;align-items:center;justify-content:space-between;flex-wrap:wrap;}
+.count{font-weight:800;color:var(--accent);}
+input,select,textarea{width:100%;padding:9px 10px;border-radius:10px;border:1px solid var(--border);background:var(--card2);color:var(--txt);font-size:14px;outline:none;font-family:inherit;}
+input:focus,select:focus,textarea:focus{border-color:var(--accent);}
+input[type=range]{padding:0;height:28px;accent-color:var(--accent);}
+
+/* ── ONGLETS PANNEAU GAUCHE ── */
+.left-tabs{display:flex;gap:4px;margin-bottom:10px;border-bottom:1px solid var(--border);padding-bottom:8px;}
+.left-tab{flex:1;border-radius:10px;padding:7px 4px;font-size:11px;min-height:34px;text-align:center;font-weight:700;}
+.left-tab.active{background:var(--accent);border-color:var(--accent);color:#0c0f14;}
+[data-theme="violet"] .left-tab.active{background:var(--accent);color:#0d0a1a;}
+
+/* ── PROOF INDICATOR ── */
+.proof-indicator{display:flex;align-items:center;gap:4px;margin:4px 0 7px;}
+.proof-dot{width:12px;height:12px;border-radius:50%;border:2px solid var(--border);background:var(--card2);transition:all .2s;}
+.proof-dot.filled{background:var(--accent);border-color:var(--accent);}
+.proof-label{font-size:10px;color:var(--muted);}
+
+/* ── DIFF BTNS ── */
+.diff-row{display:flex;gap:4px;flex-wrap:wrap;}
+.diff-btn{font-size:11px;padding:5px 8px;min-height:32px;}
+.diff-btn.active{background:#1e3a5f;border-color:#38bdf8;color:#7dd3fc;}
+
+/* ── SANITY ── */
+.sanity-wrap{background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:9px;margin:5px 0;}
+.sanity-row{display:flex;align-items:center;gap:8px;}
+.sanity-val{font-size:22px;font-weight:900;color:var(--warn);min-width:46px;text-align:center;}
+.sanity-val.low{color:var(--bad);}
+.sanity-hint{font-size:10px;color:var(--muted);margin-top:3px;line-height:1.3;}
+.sanity-auto-row{display:flex;align-items:center;gap:6px;margin-top:5px;font-size:11px;color:var(--muted);}
+
+/* ── COMPTEURS ── */
+.counters-row{display:grid;grid-template-columns:1fr 1fr;gap:7px;}
+.counter-box{background:var(--bg);border:1px solid var(--border);border-radius:11px;padding:7px;text-align:center;}
+.counter-box b{display:block;font-size:20px;color:var(--accent);}
+.counter-box span{font-size:10px;color:var(--muted);}
+.counter-btns{display:flex;gap:3px;justify-content:center;margin-top:3px;}
+.counter-btns button{min-height:28px;padding:3px 9px;font-size:14px;}
+
+/* ── TIMELINE ── */
+.timeline{max-height:140px;overflow-y:auto;margin-top:5px;}
+.tl-item{display:flex;gap:6px;align-items:flex-start;padding:4px 0;border-bottom:1px solid var(--border);font-size:11px;}
+.tl-time{color:var(--accent);font-weight:700;min-width:36px;font-variant-numeric:tabular-nums;}
+.tl-text{color:var(--txt);flex:1;}
+.tl-del{color:var(--muted);cursor:pointer;padding:1px 4px;}
+.tl-add{display:flex;gap:4px;margin-top:5px;}
+.tl-add input{font-size:12px;}
+
+/* ── CHECKLIST TERRAIN ── */
+.checklist{background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:9px;margin:5px 0;}
+.checklist h4{font-size:11px;color:var(--warn);margin:0 0 5px;font-weight:700;}
+.chk-item{display:flex;align-items:center;gap:6px;padding:3px 0;font-size:11px;cursor:pointer;}
+.chk-box{width:14px;height:14px;border-radius:3px;border:1px solid var(--border);flex-shrink:0;background:var(--card2);transition:all .15s;}
+.chk-item.done .chk-box{background:var(--ok);border-color:var(--ok);}
+.chk-item.done span{text-decoration:line-through;color:var(--muted);}
+
+/* ── GHOST CARDS ── */
+.ghost{background:var(--card2);border:1px solid var(--border);border-radius:13px;padding:10px;margin:6px 0;position:relative;animation:ghostIn .22s ease;}
+.ghost.danger{border-color:var(--bad);}
+.ghost.top-pick{border-color:var(--ok);box-shadow:0 0 0 1px color-mix(in srgb,var(--ok) 15%,transparent);}
+.ghost.removing{animation:ghostOut .18s ease forwards;}
+.badge-danger{position:absolute;top:8px;right:8px;background:#7f1d1d;border:1px solid var(--bad);color:var(--bad);border-radius:999px;font-size:10px;font-weight:800;padding:2px 6px;}
+.badge-top{position:absolute;top:8px;right:8px;background:#14532d;border:1px solid var(--ok);color:var(--ok);border-radius:999px;font-size:10px;font-weight:800;padding:2px 6px;}
+.ghost-name{font-size:14px;font-weight:700;padding-right:70px;}
+.ghost-en{color:var(--muted);font-size:10px;}
+.tags{display:flex;gap:3px;flex-wrap:wrap;margin:4px 0;}
+.tag{border:1px solid var(--border);border-radius:999px;padding:2px 6px;font-size:10px;color:var(--muted);}
+.tag.ev{color:#bfdbfe;border-color:#2563eb;}
+.tag.forced{color:#fde68a;border-color:#ca8a04;}
+.note{color:var(--muted);font-size:11px;line-height:1.35;}
+.test{color:#d1fae5;font-size:11px;line-height:1.35;}
+.kpi{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:5px;}
+.kpi div{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:5px;font-size:10px;}
+.kpi b{display:block;color:var(--txt);font-size:11px;}
+/* Score bar */
+.score-bar-wrap{margin:5px 0 3px;}
+.score-label{display:flex;justify-content:space-between;align-items:center;font-size:10px;margin-bottom:2px;}
+.score-bar{height:4px;border-radius:999px;background:var(--border);overflow:hidden;}
+.score-fill{height:100%;border-radius:999px;width:0;transition:width .5s cubic-bezier(.4,0,.2,1);}
+/* Radar */
+canvas.radar{display:block;}
+/* Swipe hint */
+.swipe-hint{font-size:9px;color:var(--muted);text-align:right;margin-top:2px;}
+
+/* ── CONCLUSION FLOTTANTE ── */
+#conclusion-bar{display:none;position:fixed;bottom:76px;left:0;right:0;z-index:40;padding:0 12px;}
+.conclusion-inner{background:var(--ok);color:#0c0f14;border-radius:16px;padding:10px 14px;display:flex;align-items:center;gap:10px;box-shadow:0 4px 24px rgba(0,0,0,.4);animation:slideUp .3s ease;}
+.conclusion-inner.two{background:var(--warn);}
+.conclusion-inner.danger-c{background:var(--bad);color:#fff;}
+.conclusion-name{font-size:16px;font-weight:900;flex:1;}
+.conclusion-action{font-size:11px;opacity:.85;margin-top:1px;}
+.conclusion-fiche{background:rgba(0,0,0,.2);border:none;border-radius:8px;padding:5px 10px;font-size:11px;color:inherit;min-height:28px;white-space:nowrap;}
+
+/* ── COMPARATEUR ── */
+#compare-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:150;overflow-y:auto;padding:14px;}
+#compare-panel{background:var(--card);border:1px solid var(--border);border-radius:20px;max-width:600px;margin:auto;padding:16px;animation:ghostIn .2s ease;}
+.compare-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px;}
+.compare-col{background:var(--card2);border:1px solid var(--border);border-radius:13px;padding:10px;}
+.compare-col h3{font-size:15px;margin:0 0 6px;color:var(--txt);}
+.compare-diff{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:8px;margin-top:8px;}
+.compare-diff h4{font-size:11px;color:var(--warn);margin:0 0 4px;text-transform:uppercase;}
+.diff-row-item{display:flex;gap:6px;font-size:11px;padding:3px 0;border-bottom:1px solid var(--border);}
+.diff-label{color:var(--muted);min-width:80px;}
+.diff-a{color:var(--accent);flex:1;}
+.diff-b{color:var(--warn);flex:1;}
+
+/* ── SORT ── */
+.sort-row{display:flex;gap:4px;margin-bottom:6px;flex-wrap:wrap;}
+.sort-btn{font-size:10px;padding:3px 8px;min-height:28px;border-radius:7px;}
+.sort-btn.active{background:var(--card);border-color:var(--accent);color:var(--accent);}
+
+/* ── WARN BOX ── */
+.warn-box{background:#2a1f08;border:1px solid #854d0e;color:#fde68a;border-radius:11px;padding:8px;font-size:11px;line-height:1.4;}
+
+/* ── HISTORIQUE ── */
+.hist-item{background:var(--card2);border:1px solid var(--border);border-radius:11px;padding:9px;margin:5px 0;display:flex;justify-content:space-between;align-items:flex-start;gap:6px;}
+.hist-ghost{font-weight:700;font-size:13px;}
+.hist-meta{font-size:10px;color:var(--muted);margin-top:2px;}
+.hist-del{color:var(--muted);cursor:pointer;font-size:11px;}
+
+/* ── COACH ── */
+.coach-tip{background:#0f2a3f;border:1px solid #1e5f8a;border-radius:10px;padding:7px 9px;margin:4px 0;font-size:11px;color:#7dd3fc;line-height:1.4;animation:fadeIn .3s ease;}
+.coach-tip::before{content:'💡 ';}
+
+/* ── MODAL ── */
+#modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.78);z-index:100;overflow-y:auto;padding:14px;}
+#modal{background:var(--card);border:1px solid var(--border);border-radius:19px;max-width:560px;margin:auto;padding:16px;position:relative;animation:ghostIn .2s ease;}
+#modal-close{position:absolute;top:10px;right:10px;background:var(--card2);border:1px solid var(--border);border-radius:999px;padding:4px 9px;font-size:11px;}
+#modal h2{font-size:19px;margin:0 0 3px;}
+.modal-section{margin-top:11px;}
+.modal-section h4{font-size:10px;color:var(--accent);margin:0 0 4px;text-transform:uppercase;letter-spacing:.06em;}
+.modal-section p{font-size:12px;color:var(--muted);line-height:1.5;margin:0;}
+.modal-kpi{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:6px;}
+.modal-kpi div{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:8px;font-size:11px;}
+.modal-kpi b{display:block;color:var(--txt);font-size:12px;margin-bottom:2px;}
+.survival{background:#1a2a1a;border:1px solid #166534;border-radius:11px;padding:9px;margin-top:6px;}
+.survival p{color:#86efac;font-size:11px;line-height:1.5;margin:0;}
+
+/* ── HUNT ── */
+#hunt-fab{position:fixed;bottom:16px;right:14px;z-index:50;background:#dc2626;border:2px solid #ef4444;border-radius:18px;color:#fff;font-size:13px;font-weight:800;padding:11px 15px;min-height:48px;box-shadow:0 4px 24px rgba(220,38,38,.5);}
+#hunt-fab:active{transform:scale(.94);}
+#hunt-overlay{display:none;position:fixed;inset:0;background:rgba(8,0,0,.94);z-index:200;overflow-y:auto;padding:14px;}
+#hunt-panel{background:var(--hunt-bg);border:2px solid var(--hunt-border);border-radius:19px;max-width:500px;margin:auto;padding:16px;}
+#hunt-panel h2{color:var(--bad);margin:0 0 3px;font-size:19px;}
+.hunt-timer-row{display:flex;align-items:center;gap:8px;background:rgba(0,0,0,.4);border-radius:11px;padding:9px;margin-bottom:9px;}
+#hunt-timer{font-size:34px;font-weight:900;color:var(--bad);font-variant-numeric:tabular-nums;}
+.hunt-ghost{background:rgba(0,0,0,.28);border:1px solid var(--hunt-border);border-radius:12px;padding:10px;margin:6px 0;}
+.hunt-ghost h3{margin:0 0 3px;font-size:14px;color:#fff;}
+.hunt-action{font-size:12px;color:#fca5a5;line-height:1.45;}
+.hunt-safe{font-size:11px;color:#86efac;margin-top:3px;}
+.post-hunt{background:#1a1008;border:1px solid #854d0e;border-radius:13px;padding:11px;margin-top:9px;}
+.post-hunt h3{color:var(--warn);margin:0 0 7px;font-size:13px;}
+.post-row{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:5px;}
+.post-btn{border-radius:9px;padding:7px;font-size:11px;min-height:36px;}
+.post-btn.selected{background:#0e7490;border-color:#38bdf8;}
+
+/* ── TREE ── */
+.tree-q{font-size:14px;font-weight:700;margin-bottom:9px;line-height:1.4;}
+.tree-choices{display:flex;flex-direction:column;gap:5px;}
+.tree-choice{text-align:left;border-radius:11px;padding:10px 13px;font-size:12px;min-height:42px;}
+.tree-result{background:#14532d;border:1px solid var(--ok);border-radius:13px;padding:11px;margin-top:7px;animation:ghostIn .28s ease;}
+.tree-result h3{color:var(--ok);margin:0 0 5px;font-size:16px;}
+.tree-result p{color:#d1fae5;font-size:11px;margin:3px 0;}
+.tree-result.danger-res{background:#450a0a;border-color:var(--bad);}
+.tree-result.danger-res h3{color:var(--bad);}
+.tree-breadcrumb{font-size:10px;color:var(--muted);margin-bottom:6px;line-height:1.6;}
+
+/* ── details ── */
+details{background:var(--bg);border:1px solid var(--border);border-radius:11px;padding:8px;margin:6px 0;}
+summary{font-weight:700;cursor:pointer;min-height:28px;display:flex;align-items:center;list-style:none;font-size:12px;}
+summary::before{content:'▶';font-size:8px;margin-right:6px;transition:transform .2s;}
+details[open] summary::before{transform:rotate(90deg);}
+footer{color:var(--muted);font-size:10px;text-align:center;padding:14px;}
+#journal-box{min-height:60px;resize:vertical;}
+#voice-btn.listening{background:#7f1d1d;border-color:var(--bad);color:var(--bad);animation:pulse 1s infinite;}
+
+/* ── PWA BANNER ── */
+#pwa-banner{display:none;position:fixed;top:60px;left:10px;right:10px;z-index:30;background:var(--card);border:1px solid var(--accent);border-radius:14px;padding:10px 14px;box-shadow:0 4px 20px rgba(0,0,0,.4);animation:slideUp .3s ease;align-items:center;gap:10px;}
+#pwa-banner span{flex:1;font-size:12px;}
+/* ── RÉSUMÉ EXPORTABLE ── */
+#resume-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:150;overflow-y:auto;padding:14px;}
+#resume-panel{background:var(--card);border:1px solid var(--border);border-radius:19px;max-width:500px;margin:auto;padding:16px;animation:ghostIn .2s ease;}
+.resume-section{background:var(--card2);border-radius:10px;padding:9px;margin:6px 0;font-size:12px;}
+.resume-section h4{font-size:10px;color:var(--accent);margin:0 0 4px;text-transform:uppercase;}
+</style>
+</head>
+<body>
+
+<!-- ── MODALS & OVERLAYS ── -->
+<div id="modal-overlay" onclick="closeModal(event)"><div id="modal"><button id="modal-close" onclick="closeModal()">✕</button><div id="modal-content"></div></div></div>
+<div id="compare-overlay"><div id="compare-panel"><div class="row"><h2>⚖️ Comparateur</h2><button class="small" onclick="document.getElementById('compare-overlay').style.display='none'">✕ Fermer</button></div><div id="compare-content"></div></div></div>
+<div id="resume-overlay"><div id="resume-panel"><div class="row"><h2>📋 Résumé de partie</h2><button class="small" onclick="document.getElementById('resume-overlay').style.display='none'">✕</button></div><div id="resume-content"></div><button class="wide primary" style="margin-top:10px;" onclick="copyResume()">📋 Copier le résumé</button></div></div>
+
+<!-- ── HUNT OVERLAY ── -->
+<div id="hunt-overlay">
+  <div id="hunt-panel">
+    <h2>🚨 CHASSE EN COURS</h2>
+    <div class="hunt-timer-row">
+      <div id="hunt-timer">0:00</div>
+      <div style="flex:1"><div style="font-size:11px;color:var(--muted);">Durée chasse</div><div style="font-size:10px;color:#fca5a5;margin-top:1px;" id="hunt-speed-hint"></div></div>
+      <button class="small" onclick="resetHuntTimer()">↺</button>
+    </div>
+    <div style="font-size:11px;color:var(--muted);margin-bottom:7px;" id="hunt-count-label"></div>
+    <div id="hunt-list"></div>
+    <div class="post-hunt" id="post-hunt-form" style="display:none;">
+      <h3>📋 Après la chasse — que s'est-il passé ?</h3>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:4px;">Vitesse perçue</div>
+      <div class="post-row">
+        <button class="post-btn" onclick="postSelect('speed','lent')">🐢 Très lent</button>
+        <button class="post-btn" onclick="postSelect('speed','normal')">➡ Normal</button>
+        <button class="post-btn" onclick="postSelect('speed','rapide')">⚡ Rapide</button>
+        <button class="post-btn" onclick="postSelect('speed','variable')">🔄 Variable</button>
+      </div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:4px;">Cachette trouvée ?</div>
+      <div class="post-row">
+        <button class="post-btn" onclick="postSelect('hide','oui')">✗ Oui</button>
+        <button class="post-btn" onclick="postSelect('hide','non')">✓ Non — caché</button>
+      </div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:4px;">Durée chasse</div>
+      <div class="post-row">
+        <button class="post-btn" onclick="postSelect('dur','courte')">⚡ Courte</button>
+        <button class="post-btn" onclick="postSelect('dur','normale')">➡ Normale</button>
+        <button class="post-btn" onclick="postSelect('dur','longue')">⏱ Longue</button>
+      </div>
+      <button class="wide primary" style="margin-top:7px;" onclick="applyPostHunt()">✓ Appliquer aux filtres</button>
+    </div>
+    <button class="wide danger-btn" style="margin-top:10px;" onclick="endHunt()">✓ Fin de chasse</button>
+  </div>
+</div>
+
+<!-- ── CONCLUSION FLOTTANTE ── -->
+<div id="conclusion-bar"><div id="conclusion-inner" class="conclusion-inner"><div style="flex:1"><div class="conclusion-name" id="conclusion-name"></div><div class="conclusion-action" id="conclusion-action"></div></div><button class="conclusion-fiche" id="conclusion-fiche-btn" onclick="">📋</button><button class="conclusion-fiche" id="conclusion-compare-btn" onclick="" style="display:none;">⚖️</button></div></div>
+
+<!-- ── PWA BANNER ── -->
+<div id="pwa-banner"><span>📱 Installer comme app sur cet écran d'accueil ?</span><button class="small" onclick="installPWA()">Installer</button><button class="small" onclick="document.getElementById('pwa-banner').style.display='none'">✕</button></div>
+
+<!-- ── HEADER ── -->
+<header>
+  <div class="header-row">
+    <div><h1>👻 Phasmophobia 2026</h1><div class="sub">29 fantômes • outil terrain expert</div></div>
+    <div class="header-right">
+      <div style="display:flex;flex-direction:column;align-items:center;cursor:pointer;" onclick="toggleChrono()" title="Tap pour démarrer/arrêter"><div id="chrono-display">--:--</div><div id="header-sanity" style="font-size:10px;font-weight:700;color:var(--warn);margin-top:-2px;">100%</div></div>
+      <div class="theme-btns">
+        <button class="theme-btn active" id="btn-dark" onclick="setTheme('dark')">🌑</button>
+        <button class="theme-btn" id="btn-torch" onclick="setTheme('torch')">🔦</button>
+        <button class="theme-btn" id="btn-violet" onclick="setTheme('violet')">🔮</button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<button id="hunt-fab" onclick="openHunt()">🚨 CHASSE !</button>
+
+<main class="grid">
+<!-- ═══ PANNEAU GAUCHE ══════════════════════════════ -->
+<section class="card">
+  <div class="row" style="margin-bottom:8px;">
+    <h2 style="margin:0;">Filtres</h2>
+    <div style="display:flex;gap:4px;">
+      <button class="small" id="voice-btn" onclick="toggleVoice()" title="Saisie vocale">🎤</button>
+      <button class="small" onclick="openResume()">📋</button>
+      <button class="small" onclick="resetAll()">↺</button>
+    </div>
+  </div>
+
+  <!-- ONGLETS PANNEAU GAUCHE -->
+  <div class="left-tabs">
+    <button class="left-tab active" onclick="switchLeft('contexte')">⚙️ Partie</button>
+    <button class="left-tab" onclick="switchLeft('preuves')">🔬 Preuves</button>
+    <button class="left-tab" onclick="switchLeft('terrain')">🏃 Terrain</button>
+  </div>
+
+  <!-- ONGLET PREUVES -->
+  <div id="left-preuves" style="display:none;">
+    <h3>Difficulté</h3>
+    <div class="diff-row" id="diffBtns">
+      <button class="small diff-btn active" onclick="setDiff(3)">Normal (3)</button>
+      <button class="small diff-btn" onclick="setDiff(2)">Interméd. (2)</button>
+      <button class="small diff-btn" onclick="setDiff(1)">Difficile (1)</button>
+      <button class="small diff-btn" onclick="setDiff(0)">Cauchemar (0)</button>
+    </div>
+    <div class="proof-indicator">
+      <span class="proof-dot" id="pd0"></span><span class="proof-dot" id="pd1"></span><span class="proof-dot" id="pd2"></span>
+      <span class="proof-label" id="proofLabel">0 / 3 preuves</span>
+    </div>
+    <h3>Preuves trouvées</h3>
+    <div class="buttons" id="evidenceBtns"></div>
+    <h3>Preuves impossibles</h3>
+    <div class="buttons" id="negativeEvidenceBtns"></div>
+    <h3>Preuve forcée confirmée</h3>
+    <div class="buttons" id="forcedEvidenceBtns"></div>
+    <h3>Recherche</h3>
+    <input id="search" placeholder="Nom du fantôme..." oninput="render()">
+    <h3>Conseil</h3>
+    <div class="warn-box" id="advice">Sélectionne une preuve pour commencer.</div>
+    <div id="coach-zone"></div>
+  </div>
+
+  <!-- ONGLET TERRAIN -->
+  <div id="left-terrain" style="display:none;">
+    <h3>Comportements observés</h3>
+    <div class="buttons" id="behaviorBtns"></div>
+
+    <h3>Sanity estimée</h3>
+    <div class="sanity-wrap">
+      <div class="sanity-row">
+        <div class="sanity-val" id="sanity-val">100%</div>
+        <input type="range" id="sanity-slider" min="0" max="100" value="100" step="5" oninput="updateSanity()" style="flex:1;">
+      </div>
+      <div class="sanity-hint" id="sanity-hint">Aucun fantôme ne peut chasser.</div>
+      <div class="sanity-auto-row">
+        <input type="checkbox" id="sanity-auto" onchange="toggleSanityAuto()" style="width:auto;padding:0;">
+        <label for="sanity-auto">Décrément auto (−3%/min solo)</label>
+      </div>
+    </div>
+
+    <h3>Compteurs</h3>
+    <div class="counters-row">
+      <div class="counter-box"><b id="cnt-candle">0</b><span>🕯 Extinctions</span><div class="counter-btns"><button onclick="counter('candle',-1)">−</button><button onclick="counter('candle',1)">+</button></div></div>
+      <div class="counter-box"><b id="cnt-hunt">0</b><span>🚨 Chasses</span><div class="counter-btns"><button onclick="counter('hunt',-1)">−</button><button onclick="counter('hunt',1)">+</button></div></div>
+    </div>
+    <div id="candle-hint" style="font-size:10px;color:var(--muted);margin-top:2px;"></div>
+
+    <!-- CHECKLIST TERRAIN DYNAMIQUE -->
+    <h3>Checklist terrain</h3>
+    <div id="checklist-zone"></div>
+
+    <details>
+      <summary>📅 Timeline</summary>
+      <div class="tl-add"><input id="tl-input" placeholder="Événement..." onkeydown="if(event.key==='Enter')addTimeline()"><button class="small" onclick="addTimeline()">+</button></div>
+      <div class="timeline" id="timeline-list"></div>
+    </details>
+
+    <details>
+      <summary>🔍 Aide 0 preuve</summary>
+      <div class="note" style="margin-top:6px;line-height:1.6;">
+        Me trouve caché → Déogène.<br>Sel intact → Spectre.<br>Souffle visible → Hantu.<br>
+        Change modèle → Obake.<br>Fusée/escargot LOS → Revenant.<br>Accélère appareils → Raiju.<br>
+        Cri parabolique → Banshee.<br>Faux orbes → Mimique.
+      </div>
+    </details>
+
+    <details>
+      <summary>📓 Journal</summary>
+      <textarea id="journal-box" placeholder="Notes libres..." style="margin-top:6px;"></textarea>
+      <div style="display:flex;gap:5px;margin-top:4px;">
+        <button class="small" onclick="saveJournal()">💾 Sauver</button>
+        <button class="small" onclick="clearJournal()">🗑</button>
+      </div>
+      <div id="journal-status" style="font-size:10px;color:var(--muted);margin-top:2px;"></div>
+    </details>
+  </div>
+
+  <!-- ONGLET CONTEXTE -->
+  <div id="left-contexte">
+    <h3>Map & joueurs</h3>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px;">
+      <select id="map-select" onchange="saveState()">
+        <option value="">🗺 Map...</option>
+        <option>Tanglewood</option><option>Willow</option><option>Bleasdale</option>
+        <option>Grafton</option><option>Edgefield</option><option>Ridgeview</option>
+        <option>Woodwind</option><option>Prison</option><option>Brownstone High</option>
+        <option>Asylum</option><option>Camp Woodwind</option><option>Maple Lodge</option>
+        <option>Point Hope</option><option>Sunny Meadows</option>
+      </select>
+      <select id="players-select" onchange="updateSanityAutoRate();saveState()">
+        <option value="1">👤 Solo</option><option value="2">👥 2J</option>
+        <option value="3">👥 3J</option><option value="4">👥 4J</option>
+      </select>
+    </div>
+    <h3>Chrono de partie</h3>
+    <div style="display:flex;align-items:center;gap:8px;background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:10px;">
+      <div id="chrono-big" style="font-size:32px;font-weight:900;color:var(--warn);font-variant-numeric:tabular-nums;cursor:pointer;" onclick="toggleChrono()">--:--</div>
+      <div style="flex:1;">
+        <button class="small wide" onclick="toggleChrono()" id="chrono-btn2">▶ Démarrer</button>
+        <button class="small wide" onclick="resetChrono()" style="margin-top:4px;">↺ Reset</button>
+      </div>
+    </div>
+    <h3>Historique des parties</h3>
+    <div id="history-stats" style="font-size:10px;color:var(--muted);margin-bottom:5px;"></div>
+    <div id="history-list"></div>
+    <div id="history-empty" style="color:var(--muted);font-size:12px;text-align:center;padding:12px;">Aucune partie enregistrée.</div>
+    <button class="wide primary" style="margin-top:8px;" onclick="saveCurrentAsGame()">💾 Enregistrer la partie en cours</button>
+    <button class="wide" style="margin-top:4px;" onclick="clearHistory()">🗑 Effacer l'historique</button>
+  </div>
+</section>
+
+<!-- ═══ PANNEAU DROIT ═══════════════════════════════ -->
+<section class="card">
+  <div style="display:flex;gap:4px;margin-bottom:8px;flex-wrap:wrap;">
+    <button class="pill active" onclick="switchRight('results')">🔍 Résultats</button>
+    <button class="pill" onclick="switchRight('tree')">🌿 Arbre</button>
+  </div>
+
+  <!-- RÉSULTATS -->
+  <div id="right-results">
+    <div class="row" style="margin-bottom:6px;">
+      <h2 style="margin:0;">Entités : <span class="count" id="count"></span></h2>
+      <div style="display:flex;gap:4px;">
+        <button class="small" onclick="toggleCompact()">⊞</button>
+        <button class="small" onclick="openCompare()" id="compare-btn" style="display:none;">⚖️ Comparer</button>
+      </div>
+    </div>
+    <div class="sort-row">
+      <button class="sort-btn active" id="sort-score" onclick="setSort('score')">★ Fiabilité</button>
+      <button class="sort-btn" id="sort-danger" onclick="setSort('danger')">⚡ Danger</button>
+      <button class="sort-btn" id="sort-alpha" onclick="setSort('alpha')">A→Z</button>
+    </div>
+    <div id="results"></div>
+  </div>
+
+  <!-- ARBRE -->
+  <div id="right-tree" style="display:none;">
+    <h2>🌿 Arbre de décision</h2>
+    <div class="tree-breadcrumb" id="tree-breadcrumb"></div>
+    <div class="tree-q" id="tree-question"></div>
+    <div class="tree-choices" id="tree-choices"></div>
+    <div id="tree-result-box"></div>
+    <button class="small" style="margin-top:8px;" onclick="treeReset()">↩ Recommencer</button>
+  </div>
+</section>
+</main>
+<footer>Astuce : Safari → Partager → Sur l'écran d'accueil</footer>
+<script>
+const ghosts=[
+  {icon:"👻",name:"Esprit",en:"Spirit",evidence:["EMF 5","Spirit Box","Écriture"],threshold:"50 %",speed:"1,7 m/s",forced:"",traits:["encens 180s","vitesse normale"],tests:"Encens hors chasse : si pas de chasse pendant 180 s, Esprit probable.",notes:"Aucune capacité agressive. Encens est sa faiblesse principale.",danger:false,survival:"Cache-toi normalement. Encens actif = 180 s de sécurité.",equipment:"Encens, crucifix, torche UV",lore:"L'entité la plus commune.",huntAction:"Comportement standard — cache-toi.",huntSafe:"Encens actif = 180 s.",radar:{speed:2,aggro:1,stealth:1,tricky:1,sanity:2}},
+  {icon:"🌫️",name:"Spectre",en:"Wraith",evidence:["EMF 5","Spirit Box","DOTS"],threshold:"50 %",speed:"1,7 m/s",forced:"",traits:["ne marche pas dans le sel","téléportation","vitesse normale"],tests:"Sel : traverse sans laisser de traces jamais.",notes:"Peut se téléporter vers un joueur.",danger:false,survival:"Méfie-toi des interactions loin de sa pièce.",equipment:"Spirit Box, EMF, DOTS",lore:"Ne marche jamais dans le sel.",huntAction:"Vitesse normale — cache-toi. Peut apparaître près de toi.",huntSafe:"Encens 90 s.",radar:{speed:2,aggro:2,stealth:3,tricky:2,sanity:2}},
+  {icon:"📷",name:"Fantôme",en:"Phantom",evidence:["Spirit Box","UV","DOTS"],threshold:"50 %",speed:"1,7 m/s",forced:"",traits:["photo invisible","clignote peu","drain santé mentale"],tests:"Photo : disparaît de la photo.",notes:"Le regarder draine plus la santé mentale.",danger:false,survival:"Baisse les yeux en chasse.",equipment:"Appareil photo, torche UV, DOTS",lore:"Disparaît sur les photos.",huntAction:"NE LE REGARDE PAS — draine la santé.",huntSafe:"Yeux baissés = moins de drain.",radar:{speed:2,aggro:2,stealth:4,tricky:2,sanity:4}},
+  {icon:"📦",name:"Poltergeist",en:"Poltergeist",evidence:["Spirit Box","UV","Écriture"],threshold:"50 %",speed:"1,7 m/s",forced:"",traits:["lance objets","explosion objets","vitesse normale"],tests:"Tas d'objets : explosion simultanée.",notes:"Très fort dans les pièces remplies d'objets.",danger:false,survival:"Pièces vides = inoffensif.",equipment:"Spirit Box, UV, livre d'écriture",lore:"Maître de la télékinésie.",huntAction:"Standard. Danger dans pièces encombrées.",huntSafe:"Pièce vide = sécurité.",radar:{speed:2,aggro:2,stealth:1,tricky:2,sanity:2}},
+  {icon:"🎤",name:"Banshee",en:"Banshee",evidence:["UV","Orbes","DOTS"],threshold:"50 % cible",speed:"1,7 m/s",forced:"",traits:["cible unique","cri parabolique","vitesse normale"],tests:"Micro parabolique : cri unique identifiable.",notes:"Ignore les non-cibles si cible présente.",danger:false,survival:"Si tu es la cible, éloigne-toi ou fais-toi oublier.",equipment:"Micro parabolique, torche UV, DOTS",lore:"Cible un seul joueur.",huntAction:"Identifie la cible ! Les non-cibles sont ignorés.",huntSafe:"Non-cible = libre de bouger.",radar:{speed:2,aggro:3,stealth:2,tricky:3,sanity:2}},
+  {icon:"⚡",name:"Djinn",en:"Jinn",evidence:["EMF 5","UV","Glacial"],threshold:"50 %",speed:"2,5 m/s à distance courant ON",forced:"",traits:["courant allumé","accélère distance","ne coupe pas disjoncteur","accélère distance courant"],tests:"Couper disjoncteur = vitesse normale.",notes:"Ne coupe pas lui-même le disjoncteur.",danger:false,survival:"Coupe le disjoncteur : perd son accélération.",equipment:"EMF, torche UV, thermomètre",lore:"Dépend du courant électrique.",huntAction:"COUPE LE DISJONCTEUR — perd sa vitesse.",huntSafe:"Sans courant : 1,7 m/s standard.",radar:{speed:4,aggro:3,stealth:1,tricky:2,sanity:2}},
+  {icon:"🌑",name:"Cauchemar",en:"Mare",evidence:["Spirit Box","Orbes","Écriture"],threshold:"60 % noir / 40 % lumière",speed:"1,7 m/s",forced:"",traits:["aime obscurité","éteint lumières","vitesse normale"],tests:"Plus agressif dans le noir — allume les lumières.",notes:"Peut chasser tôt si pièce sombre.",danger:false,survival:"Garde les lumières allumées.",equipment:"Spirit Box, orbes, livre d'écriture",lore:"Terreur des ténèbres.",huntAction:"Allume toutes les lumières !",huntSafe:"Lumières ON = seuil 40 %.",radar:{speed:2,aggro:3,stealth:2,tricky:2,sanity:3}},
+  {icon:"💨",name:"Revenant",en:"Revenant",evidence:["Orbes","Écriture","Glacial"],threshold:"50 %",speed:"1,0 m/s sans / 3,0 m/s détecté",forced:"",traits:["très lent sans cible","très rapide LOS","signature vitesse"],tests:"Escargot sans vue, fusée avec vue directe.",notes:"Identification vitesse la plus fiable.",danger:false,survival:"Ne te laisse JAMAIS voir. Reste caché.",equipment:"Orbes, thermomètre, livre d'écriture",lore:"Vitesse bipolaire emblématique.",huntAction:"NE SORS PAS — 3,0 m/s s'il te voit.",huntSafe:"Sans LOS : 1,0 m/s, facilement semé.",radar:{speed:5,aggro:3,stealth:1,tricky:3,sanity:2}},
+  {icon:"🕯️",name:"Ombre",en:"Shade",evidence:["EMF 5","Écriture","Glacial"],threshold:"35 %",speed:"1,7 m/s",forced:"",traits:["timide","peu actif joueurs proches","vitesse normale"],tests:"Peu d'activité si joueur dans la pièce.",notes:"Chasse rarement avant 35 %.",danger:false,survival:"Enquête seul — plus actif sans joueurs.",equipment:"EMF, thermomètre, livre d'écriture",lore:"Le fantôme le plus timide.",huntAction:"Seuil 35 % — peu de chasses. Standard.",huntSafe:"Sanity > 35 % = quasi aucune chasse.",radar:{speed:2,aggro:1,stealth:5,tricky:2,sanity:1}},
+  {icon:"😈",name:"Démon",en:"Demon",evidence:["UV","Écriture","Glacial"],threshold:"70 % + pouvoir",speed:"1,7 m/s",forced:"",traits:["chasse tôt","encens 60s","crucifix renforcé"],tests:"Chasses très précoces ou répétées.",notes:"Encens 60 s seulement.",danger:true,survival:"Crucifix en priorité. Encens 60 s seulement.",equipment:"Crucifix, encens, torche UV",lore:"Le plus agressif.",huntAction:"⚠ CRUCIFIX (portée +50%). Encens 60 s !",huntSafe:"Crucifix 5 m de portée.",radar:{speed:2,aggro:5,stealth:1,tricky:1,sanity:5}},
+  {icon:"🚪",name:"Yurei",en:"Yurei",evidence:["Orbes","Glacial","DOTS"],threshold:"50 %",speed:"1,7 m/s",forced:"",traits:["ferme porte","drain santé mentale","encens bloque pièce"],tests:"Ferme une porte complètement (event unique).",notes:"Encens le piège dans sa pièce.",danger:false,survival:"Encens dans sa pièce = bloqué temporairement.",equipment:"Orbes, thermomètre, DOTS",lore:"Spécialiste du drain mental.",huntAction:"Standard — encens dans sa pièce.",huntSafe:"Encens = confiné 90 s.",radar:{speed:2,aggro:2,stealth:2,tricky:2,sanity:4}},
+  {icon:"👹",name:"Oni",en:"Oni",evidence:["EMF 5","Glacial","DOTS"],threshold:"50 %",speed:"1,7 m/s",forced:"",traits:["très actif","clignote peu","pas airball"],tests:"Très visible, jamais airball.",notes:"Plus actif en présence de joueurs.",danger:false,survival:"Répartissez-vous — déteste les groupes.",equipment:"EMF, thermomètre, DOTS",lore:"Plus puissant en groupe.",huntAction:"Répartissez-vous. Très visible en chasse.",huntSafe:"Solo = moins d'activité.",radar:{speed:2,aggro:3,stealth:1,tricky:1,sanity:3}},
+  {icon:"🗣️",name:"Yokai",en:"Yokai",evidence:["Spirit Box","Orbes","DOTS"],threshold:"80 % voix / 50 % sinon",speed:"1,7 m/s",forced:"",traits:["réagit voix","entend mal en chasse","vitesse normale"],tests:"Parler près déclenche activité accrue.",notes:"Détection audio 2,5 m seulement en chasse.",danger:false,survival:"SILENCE total en chasse.",equipment:"Spirit Box, orbes, DOTS",lore:"Réagit aux voix humaines.",huntAction:"SILENCE — détecte voix à 2,5 m seulement.",huntSafe:"Sans voix = presque aveugle aux sons.",radar:{speed:2,aggro:2,stealth:2,tricky:3,sanity:3}},
+  {icon:"🌬️",name:"Hantu",en:"Hantu",evidence:["UV","Orbes","Glacial"],threshold:"50 %",speed:"1,4 m/s chaud → 2,7 m/s froid",forced:"Glacial",traits:["souffle visible","rapide froid","température"],tests:"Souffle visible dans zones froides en chasse.",notes:"Vitesse dépend de la température.",danger:false,survival:"Va vers les zones CHAUDES.",equipment:"Thermomètre, torche UV, orbes",lore:"Souffle visible en chasse.",huntAction:"Va vers les zones CHAUDES — 1,4 m/s.",huntSafe:"Zone chaude (~15°C+) = vitesse réduite.",radar:{speed:4,aggro:2,stealth:2,tricky:3,sanity:2}},
+  {icon:"📹",name:"Goryo",en:"Goryo",evidence:["EMF 5","UV","DOTS"],threshold:"50 %",speed:"1,7 m/s",forced:"DOTS",traits:["DOTS caméra","change peu pièce","vitesse normale"],tests:"DOTS visible uniquement via caméra.",notes:"Ne change pas de pièce si joueurs présents.",danger:false,survival:"Prévisible — reste dans sa pièce.",equipment:"Caméra vidéo, EMF, torche UV",lore:"DOTS via caméra seulement.",huntAction:"Standard et prévisible.",huntSafe:"Reste dans sa pièce.",radar:{speed:2,aggro:1,stealth:3,tricky:2,sanity:2}},
+  {icon:"🔇",name:"Myling",en:"Myling",evidence:["EMF 5","UV","Écriture"],threshold:"50 %",speed:"1,7 m/s",forced:"",traits:["pas silencieux","sons paraboliques","vitesse normale"],tests:"Pas audibles à longue distance seulement.",notes:"Ses pas sont inaudibles > 12 m.",danger:false,survival:"Guette la lampe clignotante.",equipment:"Micro parabolique, EMF, torche UV",lore:"Silencieux à distance.",huntAction:"GUETTE LA LAMPE — pas silencieux à distance.",huntSafe:"Lampe clignote = il est proche.",radar:{speed:2,aggro:2,stealth:4,tricky:2,sanity:2}},
+  {icon:"🕯️",name:"Onryo",en:"Onryo",evidence:["Spirit Box","Orbes","Glacial"],threshold:"60 % / 40 % flamme",speed:"1,7 m/s",forced:"",traits:["bougies","flammes repoussent","extinctions chassent"],tests:"3+ extinctions = peut déclencher chasse.",notes:"Les flammes bloquent mais 3 extinctions = danger.",danger:false,survival:"Garde 1 bougie allumée.",equipment:"Bougies, orbes, thermomètre",lore:"Craint les flammes.",huntAction:"Allume une bougie — peut bloquer la chasse.",huntSafe:"Flamme allumée = protection.",radar:{speed:2,aggro:3,stealth:2,tricky:4,sanity:3}},
+  {icon:"👥",name:"Les Jumeaux",en:"The Twins",evidence:["EMF 5","Spirit Box","Glacial"],threshold:"50 %",speed:"1,5 m/s lent / 1,9 m/s rapide",forced:"",traits:["double activité","vitesse variable","interactions éloignées"],tests:"Deux interactions simultanées éloignées.",notes:"Peut simuler un changement de pièce.",danger:false,survival:"Identifie lequel chasse (lent ou rapide).",equipment:"EMF, Spirit Box, thermomètre",lore:"Deux entités liées.",huntAction:"L'un lent (1,5), l'autre rapide (1,9). Identifie lequel.",huntSafe:"Le lent est facilement semé.",radar:{speed:3,aggro:2,stealth:2,tricky:4,sanity:2}},
+  {icon:"🔌",name:"Raiju",en:"Raiju",evidence:["EMF 5","Orbes","DOTS"],threshold:"65 % appareils / 50 % sinon",speed:"2,5 m/s près électroniques",forced:"",traits:["appareils électroniques","accélère appareils","perturbations loin","interference electronique"],tests:"Accélère nettement près appareils actifs.",notes:"Interférence à 15 m.",danger:false,survival:"Éteins ton équipement en chasse.",equipment:"EMF, orbes, DOTS",lore:"Se nourrit de l'électronique.",huntAction:"ÉTEINS TON ÉQUIPEMENT — accélère près appareils.",huntSafe:"Sans appareils actifs : 1,7 m/s.",radar:{speed:4,aggro:2,stealth:2,tricky:3,sanity:2}},
+  {icon:"🖐️",name:"Obake",en:"Obake",evidence:["EMF 5","UV","Orbes"],threshold:"50 %",speed:"1,7 m/s",forced:"UV",traits:["empreinte 6 doigts","change modèle","UV spécial"],tests:"Empreinte 6 doigts ou shapeshift en chasse.",notes:"Peut changer de modèle durant la chasse.",danger:false,survival:"Ne te laisse pas désorienter par le shapeshift.",equipment:"Torche UV, EMF, orbes",lore:"Empreinte 6 doigts et shapeshift.",huntAction:"Peut changer d'apparence. Vitesse standard.",huntSafe:"Comportement standard sinon.",radar:{speed:2,aggro:2,stealth:3,tricky:4,sanity:2}},
+  {icon:"🎭",name:"Mimique",en:"The Mimic",evidence:["Spirit Box","UV","Glacial"],threshold:"Variable",speed:"Variable",forced:"Faux Orbes",traits:["faux orbes","copie fantômes","comportement incohérent"],tests:"Faux orbes toujours présents même 0 preuve.",notes:"Imite comportements d'un autre fantôme.",danger:false,survival:"Faux orbes = seul indice certain.",equipment:"Spirit Box, torche UV, thermomètre",lore:"Le grand trompeur.",huntAction:"Applique la tactique du fantôme imité.",huntSafe:"Faux orbes = Mimique certain.",radar:{speed:3,aggro:3,stealth:3,tricky:5,sanity:3}},
+  {icon:"🧠",name:"Moroi",en:"Moroi",evidence:["Spirit Box","Écriture","Glacial"],threshold:"50 %",speed:"1,5 m/s sanity haute → 2,25 m/s sanity basse",forced:"Spirit Box",traits:["malédiction","très rapide sanity basse","encens 7s en chasse"],tests:"Vitesse monte avec baisse de sanity.",notes:"Encens en chasse = ralentit (7 s, unique).",danger:true,survival:"Maintiens ta sanity HAUTE. Encens en chasse.",equipment:"Spirit Box, thermomètre, encens",lore:"Se nourrit de la folie.",huntAction:"⚠ ENCENS EN CHASSE (7s unique). Sanity basse = danger extrême.",huntSafe:"Sanity haute = 1,5 m/s seulement.",radar:{speed:4,aggro:4,stealth:2,tricky:3,sanity:5}},
+  {icon:"👁️",name:"Déogène",en:"Deogen",evidence:["Spirit Box","Écriture","DOTS"],threshold:"40 %",speed:"3,0 m/s loin → 0,4 m/s proche",forced:"Spirit Box",traits:["trouve caché","lent proche","réponse respiration"],tests:"Impossible de se cacher. Souffle Spirit Box.",notes:"Ralentit ÉNORMÉMENT au contact.",danger:true,survival:"NE TE CACHE PAS. Kite-le en boucle.",equipment:"Spirit Box, livre d'écriture, DOTS",lore:"Omniscient.",huntAction:"⚠ NE TE CACHE PAS — kite autour d'un meuble.",huntSafe:"Il ralentit à 0,4 m/s au contact.",radar:{speed:5,aggro:4,stealth:1,tricky:4,sanity:4}},
+  {icon:"👴",name:"Thayé",en:"Thaye",evidence:["Orbes","Écriture","DOTS"],threshold:"75 % jeune → 15 % vieux",speed:"2,75 m/s jeune → 1,0 m/s vieux",forced:"",traits:["vieillit","agressif début","ralentit avec temps"],tests:"Très actif au début, ralentit avec le temps.",notes:"Thayé ralentit, Moroi accélère.",danger:false,survival:"Attends qu'il vieillisse si possible.",equipment:"Orbes, DOTS, livre d'écriture",lore:"Vieillit au fil de la partie.",huntAction:"Début = DANGER (2,75 m/s). Fin = très lent.",huntSafe:"Partie avancée : 1,0 m/s et seuil 15 %.",radar:{speed:4,aggro:4,stealth:1,tricky:3,sanity:4}},
+  {icon:"⚔️",name:"Gallu",en:"Gallu",evidence:["EMF 5","Spirit Box","UV"],threshold:"40 % affaibli / 50 % normal / 60 % enragé",speed:"1,36 affaibli / 1,7 normal / 1,955 enragé m/s",forced:"",traits:["états force","encens variable","sel selon état"],tests:"Identifier état : affaibli / normal / enragé.",notes:"Enragé : bloque sel, encens 4s. Normal : 5s. Affaibli : 6s.",danger:false,survival:"Enragé = fuis. Affaibli = enquête vite.",equipment:"EMF, Spirit Box, torche UV",lore:"Trois états distincts.",huntAction:"État ENRAGÉ (1,955 m/s) = fuis vite.",huntSafe:"Affaibli : 1,36 m/s et seuil 40 %.",radar:{speed:3,aggro:3,stealth:2,tricky:4,sanity:3}},
+  {icon:"🚶",name:"Dayan",en:"Dayan",evidence:["EMF 5","Orbes","Spirit Box"],threshold:"45/50/65 % selon mouvement",speed:"1,2 m/s immobile / 2,25 m/s mouvement",forced:"",traits:["réagit mouvement","immobile ralentit","modèle féminin"],tests:"Immobile = ralentit. Bouger = accélère.",notes:"Réagit mouvement visuel, différent de Kormos.",danger:false,survival:"IMMOBILISE-TOI derrière obstacle.",equipment:"EMF, orbes, Spirit Box",lore:"Réagit au mouvement visuel.",huntAction:"IMMOBILISE-TOI — passe de 2,25 à 1,2 m/s.",huntSafe:"Immobile : seuil 45 % et vitesse 1,2 m/s.",radar:{speed:3,aggro:2,stealth:2,tricky:4,sanity:2}},
+  {icon:"🔄",name:"Obambo",en:"Obambo",evidence:["UV","Écriture","DOTS"],threshold:"10 % calme / 65 % agressif",speed:"1,445 m/s calme / 1,955 m/s agressif",forced:"",traits:["phases calme agressif","vitesse change","durée chasse agressive réduite","phases lent rapide"],tests:"Phases alternées calme/agressif. Chasse courte si agressif.",notes:"Chasse agressive = durée réduite de 20 %.",danger:true,survival:"Chasse agressive COURTE — reste caché.",equipment:"UV, livre d'écriture, DOTS",lore:"Alterne deux états extrêmes.",huntAction:"⚠ Phase agressive COURTE — reste caché, ça passe.",huntSafe:"Chasse agressive dure moins longtemps.",radar:{speed:3,aggro:4,stealth:2,tricky:4,sanity:4}},
+  {icon:"🐍",name:"Aswang",en:"Aswang",evidence:["Glacial","Écriture","DOTS"],threshold:"50 %",speed:"1,53 m/s base → 2,53 m/s max LOS (8,67s)",forced:"",traits:["accélération LOS forte","base lente","cachette sûre","LoS max 2,53 en 8,67s"],tests:"Accélère en LOS — casser LOS stoppe l'accélération.",notes:"Cachette officielle = très sûre.",danger:false,survival:"CACHE-TOI — brise la LOS immédiatement.",equipment:"Thermomètre, livre d'écriture, DOTS",lore:"Prédateur de la ligne de vue.",huntAction:"CACHE-TOI — LOS brisée = retour à 1,53 m/s.",huntSafe:"Cachette = très sûre pour l'Aswang.",radar:{speed:4,aggro:2,stealth:2,tricky:3,sanity:2}},
+  {icon:"👂",name:"Kormos",en:"Kormos",evidence:["Orbes","Spirit Box","UV"],threshold:"50 % / 70 % sprint même pièce",speed:"1,7 m/s, sensible aux sons",forced:"",traits:["réagit aux pas","sprint déclenche","quasi aveugle","immobile"],tests:"Immobile + silence = il passe à côté.",notes:"Sprint 30m, marche 15m, accroupi 10m de détection.",danger:false,survival:"STOP & SILENCE. Ne jamais sprinter près de lui.",equipment:"Orbes, Spirit Box, torche UV",lore:"Presque aveugle, traque les sons.",huntAction:"STOP & SILENCE — quasi aveugle. Sprint dans même pièce = danger 70 %.",huntSafe:"Immobile + silencieux = il passe souvent à côté.",radar:{speed:2,aggro:2,stealth:2,tricky:4,sanity:2}}
+];
+
+const evidences=["EMF 5","Spirit Box","UV","Orbes","Écriture","DOTS","Glacial"];
+const forcedEvidences=["DOTS","Glacial","UV","Orbes","Spirit Box","Faux Orbes"];
+const behaviors=[
+  ["ne marche pas dans le sel","Ne marche pas dans le sel"],["souffle visible","Souffle visible"],
+  ["trouve caché","Me trouve caché"],["appareils électroniques","Accélère près appareils"],
+  ["rapide froid","Rapide dans le froid"],["change modèle","Change de modèle"],
+  ["cible unique","Cible unique"],["réagit voix","Réagit aux voix"],
+  ["réagit mouvement","Réagit au mouvement"],["réagit aux pas","Réagit aux pas/sprint"],
+  ["très lent sans cible","Très lent sans cible"],["très rapide LOS","Très rapide en LOS"],
+  ["bougies","Réagit aux bougies"],["lance objets","Lance beaucoup d'objets"],
+  ["timide","Très timide"],["chasse tôt","Chasse très tôt"],
+  ["accélère distance courant","Accélère distance courant ON"],
+  ["interference electronique","Interférence 15m (Raiju)"],
+  ["phases lent rapide","Phases lent/rapide alternées"]
+];
+
+// ── ÉTAT ──────────────────────────────────────────────────────
+let posEv=new Set(),negEv=new Set(),posBeh=new Set(),forcedEv=new Set();
+let compact=false,maxProofs=3,sortMode='score',sanity=100;
+let cntCandle=0,cntHunt=0,timeline=[],history=[];
+let chronoRunning=false,chronoStart=null,chronoElapsed=0,chronoInterval=null;
+let huntTimerRunning=false,huntTimerStart=null,huntTimerInterval=null;
+let sanityAutoInterval=null,sanityAutoOn=false;
+let postData={speed:null,hide:null,dur:null};
+let coachMode=true;
+let deferredInstall=null;
+let checklistState={};
+
+// ── THÈME ──────────────────────────────────────────────────────
+function setTheme(t){document.documentElement.setAttribute('data-theme',t);document.querySelectorAll('.theme-btn').forEach(b=>b.classList.remove('active'));document.getElementById('btn-'+t).classList.add('active');try{localStorage.setItem('phasmo_theme',t);}catch(e){}}
+function loadTheme(){try{const t=localStorage.getItem('phasmo_theme');if(t)setTheme(t);}catch(e){}}
+
+// ── CHRONO ────────────────────────────────────────────────────
+function toggleChrono(){
+  if(!chronoRunning){chronoStart=Date.now()-chronoElapsed;chronoRunning=true;document.getElementById('chrono-btn2').textContent='⏸ Pause';chronoInterval=setInterval(tickChrono,500);}
+  else{chronoElapsed=Date.now()-chronoStart;chronoRunning=false;clearInterval(chronoInterval);document.getElementById('chrono-btn2').textContent='▶ Démarrer';}
+}
+function tickChrono(){
+  const ms=Date.now()-chronoStart;
+  const m=Math.floor(ms/60000),s=Math.floor((ms%60000)/1000);
+  const str=m+':'+(s<10?'0':'')+s;
+  ['chrono-display','chrono-big'].forEach(id=>{const el=document.getElementById(id);if(el){el.textContent=str;el.className=ms>900000?'danger':(chronoRunning?'running':'');}});
+  // Auto-sanity
+  if(sanityAutoOn){
+    const players=parseInt(document.getElementById('players-select').value)||1;
+    const ratePerMs=3/(60000*players);
+    const newSanity=Math.max(0,100-Math.floor(ms*ratePerMs));
+    if(newSanity!==sanity){sanity=newSanity;document.getElementById('sanity-slider').value=sanity;updateSanityDisplay();}
+  }
+}
+function resetChrono(){chronoElapsed=0;chronoRunning=false;clearInterval(chronoInterval);const str='--:--';['chrono-display','chrono-big'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=str;});document.getElementById('chrono-btn2').textContent='▶ Démarrer';}
+function currentTime(){const ms=chronoRunning?(Date.now()-chronoStart):chronoElapsed;const m=Math.floor(ms/60000),s=Math.floor((ms%60000)/1000);return chronoRunning?m+':'+(s<10?'0':'')+s:'--:--';}
+
+// ── HUNT TIMER ────────────────────────────────────────────────
+function startHuntTimer(){huntTimerStart=Date.now();huntTimerRunning=true;huntTimerInterval=setInterval(()=>{const s=Math.floor((Date.now()-huntTimerStart)/1000),m=Math.floor(s/60);document.getElementById('hunt-timer').textContent=m+':'+(s%60<10?'0':'')+s%60;const h=document.getElementById('hunt-speed-hint');if(s<20)h.textContent='';else if(s<40)h.textContent='Durée normale';else h.textContent='⚠ Longue — Démon possible';},500);}
+function resetHuntTimer(){clearInterval(huntTimerInterval);huntTimerRunning=false;document.getElementById('hunt-timer').textContent='0:00';document.getElementById('hunt-speed-hint').textContent='';}
+
+// ── SANITY ────────────────────────────────────────────────────
+function updateSanity(){sanity=parseInt(document.getElementById('sanity-slider').value);updateSanityDisplay();saveState();render();}
+function updateSanityDisplay(){
+  const v=document.getElementById('sanity-val');v.textContent=sanity+'%';v.className='sanity-val'+(sanity<=35?' low':'');
+  const hs=document.getElementById('header-sanity');if(hs){hs.textContent=sanity+'%';hs.style.color=sanity<=35?'var(--bad)':sanity<=60?'var(--bad)':sanity<=75?'var(--warn)':'var(--ok)';}
+  const hints=['Aucun fantôme ne peut chasser.','Yokai (voix) peut chasser.','+ Thayé jeune.','+ Démon, Kormos sprint.','+ Raiju, Obambo agressif, Dayan mouvement.','+ Mare noir, Onryo, Gallu enragé.','Majorité des fantômes.','Presque tous.','⚠ TOUS — Ombre aussi.','🔴 DANGER MAX — sortez !'];
+  const idx=sanity>=100?0:sanity>=80?1:sanity>=75?2:sanity>=70?3:sanity>=65?4:sanity>=60?5:sanity>=50?6:sanity>=40?7:sanity>=35?8:9;
+  document.getElementById('sanity-hint').textContent=hints[idx];
+}
+function toggleSanityAuto(){sanityAutoOn=document.getElementById('sanity-auto').checked;}
+function updateSanityAutoRate(){}
+
+// ── COMPTEURS ─────────────────────────────────────────────────
+function counter(type,delta){
+  if(type==='candle'){cntCandle=Math.max(0,cntCandle+delta);document.getElementById('cnt-candle').textContent=cntCandle;const h=document.getElementById('candle-hint');h.textContent=cntCandle>=3?'⚠ 3+ extinctions — Onryo peut chasser !':cntCandle>0?`${3-cntCandle} avant risque Onryo`:'';}
+  if(type==='hunt'){cntHunt=Math.max(0,cntHunt+delta);document.getElementById('cnt-hunt').textContent=cntHunt;}
+  saveState();
+}
+
+// ── TIMELINE ──────────────────────────────────────────────────
+function addTimeline(){const inp=document.getElementById('tl-input'),txt=inp.value.trim();if(!txt)return;timeline.push({time:currentTime(),txt,id:Date.now()});inp.value='';renderTimeline();saveState();}
+function renderTimeline(){const list=document.getElementById('timeline-list');list.innerHTML='';[...timeline].reverse().forEach(e=>{const d=document.createElement('div');d.className='tl-item';d.innerHTML=`<span class="tl-time">${e.time}</span><span class="tl-text">${e.txt}</span><span class="tl-del" onclick="delTimeline(${e.id})">✕</span>`;list.appendChild(d);});}
+function delTimeline(id){timeline=timeline.filter(e=>e.id!==id);renderTimeline();saveState();}
+
+// ── CHECKLIST DYNAMIQUE ────────────────────────────────────────
+function buildChecklist(){
+  const list=ghosts.filter(matches);
+  const items=[];
+  if(list.some(g=>g.name==='Raiju'||g.traits.includes('appareils électroniques')))items.push({id:'elec',text:'Préparer / contrôler les appareils électroniques (Raiju)'});
+  if(list.some(g=>g.name==='Onryo'||g.traits.includes('bougies')))items.push({id:'bougie',text:'Préparer bougies + crucifix (Onryo)'});
+  if(list.some(g=>g.name==='Démon'||g.traits.includes('chasse tôt')))items.push({id:'crucifix',text:'Poser crucifix immédiatement (Démon possible)'});
+  if(list.some(g=>g.traits.includes('ne marche pas dans le sel')))items.push({id:'sel',text:'Poser sel sur le trajet (Spectre/Gallu)'});
+  if(list.some(g=>g.name==='Moroi'))items.push({id:'encens_moroi',text:'Garder encens pour chasse (Moroi — 7s)'});
+  if(list.some(g=>g.name==='Goryo'))items.push({id:'camera',text:'Placer caméra pour DOTS (Goryo — caméra seulement)'});
+  if(list.some(g=>g.name==='Déogène'))items.push({id:'deogen',text:'⚠ NE PAS SE CACHER si Déogène — prévoir loop'});
+  if(list.some(g=>g.name==='Banshee'))items.push({id:'banshee',text:'Identifier la cible Banshee (micro parabolique)'});
+  if(list.some(g=>g.name==='Yokai'))items.push({id:'yokai',text:'SILENCE en chasse si Yokai possible'});
+  const zone=document.getElementById('checklist-zone');
+  if(items.length===0){zone.innerHTML='<div style="font-size:11px;color:var(--muted);">Affine les filtres pour voir les conseils.</div>';return;}
+  let html='<div class="checklist"><h4>À préparer / surveiller</h4>';
+  items.forEach(item=>{const done=checklistState[item.id];html+=`<div class="chk-item${done?' done':''}" onclick="toggleCheck('${item.id}')"><div class="chk-box"></div><span>${item.text}</span></div>`;});
+  html+='</div>';zone.innerHTML=html;
+}
+function toggleCheck(id){checklistState[id]=!checklistState[id];buildChecklist();}
+
+// ── COACH ─────────────────────────────────────────────────────
+function buildCoach(){
+  const zone=document.getElementById('coach-zone');zone.innerHTML='';if(!coachMode)return;
+  const list=ghosts.filter(matches);if(list.length===0||list.length>10)return;
+  const tips=[];
+  if(posEv.size===0&&posBeh.size===0)tips.push('Commence par cocher les preuves trouvées — elles éliminent rapidement.');
+  if(list.some(g=>g.name==='Mimique')&&!forcedEv.has('Faux Orbes'))tips.push('Mimique toujours possible — vérifie s\'il y a des faux orbes.');
+  if(list.length===2)tips.push(`Il reste 2 suspects : utilise le bouton ⚖️ pour les comparer côte à côte.`);
+  const remEvs=evidences.filter(e=>list.some(g=>g.evidence.includes(e))&&list.some(g=>!g.evidence.includes(e)));
+  if(remEvs.length>0&&posEv.size<maxProofs)tips.push(`Cherche ${remEvs[0]} — c'est la preuve la plus discriminante.`);
+  tips.slice(0,2).forEach(t=>{const d=document.createElement('div');d.className='coach-tip';d.textContent=t;zone.appendChild(d);});
+}
+
+// ── PERSISTANCE ───────────────────────────────────────────────
+function saveState(){try{localStorage.setItem('phasmo_state',JSON.stringify({posEv:[...posEv],negEv:[...negEv],posBeh:[...posBeh],forcedEv:[...forcedEv],compact,maxProofs,sortMode,sanity,cntCandle,cntHunt,timeline,search:document.getElementById('search').value,map:document.getElementById('map-select').value,players:document.getElementById('players-select').value,checklistState}));}catch(e){}}
+function loadState(){try{const s=localStorage.getItem('phasmo_state');if(!s)return;const d=JSON.parse(s);posEv=new Set(d.posEv||[]);negEv=new Set(d.negEv||[]);posBeh=new Set(d.posBeh||[]);forcedEv=new Set(d.forcedEv||[]);compact=d.compact||false;maxProofs=d.maxProofs??3;sortMode=d.sortMode||'score';sanity=d.sanity??100;cntCandle=d.cntCandle||0;cntHunt=d.cntHunt||0;timeline=d.timeline||[];checklistState=d.checklistState||{};document.getElementById('search').value=d.search||'';if(d.map)document.getElementById('map-select').value=d.map;if(d.players)document.getElementById('players-select').value=d.players;document.getElementById('sanity-slider').value=sanity;document.getElementById('cnt-candle').textContent=cntCandle;document.getElementById('cnt-hunt').textContent=cntHunt;updateDiffBtns();updateSortBtns();updateSanityDisplay();renderTimeline();}catch(e){}}
+function saveJournal(){try{localStorage.setItem('phasmo_journal',document.getElementById('journal-box').value);document.getElementById('journal-status').textContent='✓ Sauvegardé';setTimeout(()=>document.getElementById('journal-status').textContent='',2000);}catch(e){}}
+function clearJournal(){document.getElementById('journal-box').value='';try{localStorage.removeItem('phasmo_journal');}catch(e){}}
+function loadJournal(){try{const j=localStorage.getItem('phasmo_journal');if(j)document.getElementById('journal-box').value=j;}catch(e){}}
+
+// ── HISTORIQUE ────────────────────────────────────────────────
+function loadHistory(){try{const h=localStorage.getItem('phasmo_history');if(h)history=JSON.parse(h);}catch(e){}}
+function saveHistory(){try{localStorage.setItem('phasmo_history',JSON.stringify(history));}catch(e){}}
+function saveCurrentAsGame(){
+  const list=ghosts.filter(matches);
+  const top=list.length===1?list[0].name:list.length>0?list.map(g=>g.name).join(' / '):'Indéterminé';
+  history.unshift({id:Date.now(),date:new Date().toLocaleDateString('fr-FR'),ghost:top,map:document.getElementById('map-select').value||'?',players:document.getElementById('players-select').value||'1',evidences:[...posEv],behaviors:[...posBeh],hunts:cntHunt,timeline:[...timeline]});
+  if(history.length>20)history=history.slice(0,20);
+  saveHistory();renderHistory();
+  document.getElementById('journal-status').textContent='✓ Partie enregistrée !';setTimeout(()=>document.getElementById('journal-status').textContent='',2500);
+}
+function clearHistory(){history=[];saveHistory();renderHistory();}
+function delHistoryEntry(id){history=history.filter(e=>e.id!==id);saveHistory();renderHistory();}
+function renderHistory(){
+  const list=document.getElementById('history-list'),empty=document.getElementById('history-empty'),stats=document.getElementById('history-stats');
+  list.innerHTML='';
+  if(history.length===0){empty.style.display='block';stats.textContent='';return;}
+  empty.style.display='none';
+  const gc={};history.forEach(e=>e.ghost.split(' / ').forEach(g=>{gc[g]=(gc[g]||0)+1;}));
+  const top=Object.entries(gc).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([g,n])=>`${g}×${n}`).join(' • ');
+  stats.textContent=`${history.length} partie(s) — top : ${top}`;
+  history.forEach(e=>{const d=document.createElement('div');d.className='hist-item';d.innerHTML=`<div style="flex:1"><div class="hist-ghost">${e.ghost}</div><div class="hist-meta">${e.date} • ${e.map} • ${e.players}J • ${e.hunts} chasse(s) • ${e.evidences.join(', ')||'0 preuve'}</div></div><span class="hist-del" onclick="delHistoryEntry(${e.id})">✕</span>`;list.appendChild(d);});
+}
+
+// ── RÉSUMÉ EXPORTABLE ─────────────────────────────────────────
+function openResume(){
+  const list=ghosts.filter(matches);
+  const top=list.length===1?list[0].name:list.length>0?list.map(g=>g.icon+g.name).join(', '):'Indéterminé';
+  const map=document.getElementById('map-select').value||'Non renseignée';
+  const players=document.getElementById('players-select').value;
+  const tlHtml=timeline.length?timeline.map(e=>`<div>${e.time} — ${e.txt}</div>`).join(''):'<div>Aucun événement</div>';
+  document.getElementById('resume-content').innerHTML=`
+    <div class="resume-section"><h4>Fantôme identifié</h4><div style="font-size:16px;font-weight:700;">${top}</div></div>
+    <div class="resume-section"><h4>Contexte</h4>${map} • ${players} joueur(s) • ${cntHunt} chasse(s)</div>
+    <div class="resume-section"><h4>Preuves trouvées</h4>${[...posEv].join(', ')||'Aucune'}</div>
+    <div class="resume-section"><h4>Comportements</h4>${[...posBeh].join(', ')||'Aucun'}</div>
+    <div class="resume-section"><h4>Timeline</h4>${tlHtml}</div>`;
+  document.getElementById('resume-overlay').style.display='block';
+}
+function copyResume(){
+  const list=ghosts.filter(matches);
+  const top=list.length===1?list[0].name:list.length>0?list.map(g=>g.name).join(' / '):'Indéterminé';
+  const txt=`Phasmophobia — ${new Date().toLocaleDateString('fr-FR')}\nFantôme : ${top}\nMap : ${document.getElementById('map-select').value||'?'} • ${document.getElementById('players-select').value}J\nPreuves : ${[...posEv].join(', ')||'aucune'}\nComportements : ${[...posBeh].join(', ')||'aucun'}\nChasses : ${cntHunt}\nTimeline:\n${timeline.map(e=>`  ${e.time} — ${e.txt}`).join('\n')||'  (vide)'}`;
+  navigator.clipboard?.writeText(txt).then(()=>{document.getElementById('journal-status').textContent='✓ Copié !';setTimeout(()=>document.getElementById('journal-status').textContent='',2000);});
+}
+
+// ── VOIX ──────────────────────────────────────────────────────
+let voiceRecog=null,voiceOn=false;
+function toggleVoice(){
+  if(!('webkitSpeechRecognition'in window||'SpeechRecognition'in window)){alert('Saisie vocale non supportée.');return;}
+  if(voiceOn){voiceRecog?.stop();voiceOn=false;document.getElementById('voice-btn').classList.remove('listening');return;}
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  voiceRecog=new SR();voiceRecog.lang='fr-FR';voiceRecog.continuous=true;voiceRecog.interimResults=false;
+  voiceRecog.onresult=e=>{
+    const txt=e.results[e.results.length-1][0].transcript.toLowerCase();
+    let changed=false;
+    if(txt.includes('emf')&&!posEv.has('EMF 5')&&posEv.size<maxProofs){posEv.add('EMF 5');changed=true;}
+    if((txt.includes('spirit box')||txt.includes('spiritbox'))&&!posEv.has('Spirit Box')&&posEv.size<maxProofs){posEv.add('Spirit Box');changed=true;}
+    if((txt.includes('ultraviolet')||txt.includes(' uv '))&&!posEv.has('UV')&&posEv.size<maxProofs){posEv.add('UV');changed=true;}
+    if((txt.includes('orbes')||txt.includes('orbe'))&&!posEv.has('Orbes')&&posEv.size<maxProofs){posEv.add('Orbes');changed=true;}
+    if((txt.includes('écriture')||txt.includes('ecriture'))&&!posEv.has('Écriture')&&posEv.size<maxProofs){posEv.add('Écriture');changed=true;}
+    if(txt.includes('dots')&&!posEv.has('DOTS')&&posEv.size<maxProofs){posEv.add('DOTS');changed=true;}
+    if((txt.includes('glacial')||txt.includes('température froide'))&&!posEv.has('Glacial')&&posEv.size<maxProofs){posEv.add('Glacial');changed=true;}
+    if(txt.length>3)timeline.push({time:currentTime(),txt:'🎤 '+txt,id:Date.now()});
+    renderTimeline();if(changed){saveState();render();}
+  };
+  voiceRecog.onerror=()=>{voiceOn=false;document.getElementById('voice-btn').classList.remove('listening');};
+  voiceRecog.start();voiceOn=true;document.getElementById('voice-btn').classList.add('listening');
+}
+
+// ── PWA ───────────────────────────────────────────────────────
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredInstall=e;const banner=document.getElementById('pwa-banner');banner.style.display='flex';});
+function installPWA(){if(deferredInstall){deferredInstall.prompt();deferredInstall.userChoice.then(()=>{deferredInstall=null;document.getElementById('pwa-banner').style.display='none';});}}
+
+// ── FILTRES ───────────────────────────────────────────────────
+function makeBtn(label,cls,fn){const b=document.createElement('button');b.textContent=label;b.className=cls||'';b.onclick=fn;return b;}
+function setDiff(n){maxProofs=n;updateDiffBtns();if([...posEv].length>maxProofs){const arr=[...posEv];arr.splice(maxProofs);posEv=new Set(arr);}saveState();render();}
+function updateDiffBtns(){[...document.getElementById('diffBtns').children].forEach(b=>b.classList.toggle('active',parseInt(b.getAttribute('data-n'))===maxProofs));}
+function setSort(s){sortMode=s;updateSortBtns();saveState();render();}
+function updateSortBtns(){document.querySelectorAll('.sort-btn').forEach(b=>b.classList.toggle('active',b.id==='sort-'+sortMode));}
+function updateProofIndicator(){const n=[...posEv].length,max=maxProofs;for(let i=0;i<3;i++){const d=document.getElementById('pd'+i);if(d){d.style.display=i<max?'':'none';d.classList.toggle('filled',i<n);}}document.getElementById('proofLabel').textContent=`${n} / ${max} preuve${max>1?'s':''}`;}
+
+function init(){
+  [...document.getElementById('diffBtns').children].forEach((b,i)=>b.setAttribute('data-n',[3,2,1,0][i]));
+  const eb=document.getElementById('evidenceBtns'),nb=document.getElementById('negativeEvidenceBtns'),fb=document.getElementById('forcedEvidenceBtns'),bb=document.getElementById('behaviorBtns');
+  evidences.forEach(e=>eb.appendChild(makeBtn(e,'',()=>{if(posEv.has(e)){posEv.delete(e);}else if(posEv.size<maxProofs){posEv.add(e);negEv.delete(e);}if(navigator.vibrate)navigator.vibrate(30);saveState();render();})));
+  evidences.forEach(e=>nb.appendChild(makeBtn('✕ '+e,'',()=>{negEv.has(e)?negEv.delete(e):negEv.add(e);posEv.delete(e);if(navigator.vibrate)navigator.vibrate(20);saveState();render();})));
+  forcedEvidences.forEach(e=>fb.appendChild(makeBtn('★ '+e,'',()=>{forcedEv.has(e)?forcedEv.delete(e):forcedEv.add(e);saveState();render();})));
+  behaviors.forEach(([key,label])=>bb.appendChild(makeBtn(label,'',()=>{posBeh.has(key)?posBeh.delete(key):posBeh.add(key);if(navigator.vibrate)navigator.vibrate(20);saveState();render();})));
+  loadTheme();loadState();loadJournal();loadHistory();updateSortBtns();render();treeReset();renderHistory();
+}
+
+function updateButtons(){
+  [...document.getElementById('evidenceBtns').children].forEach((b,i)=>b.className=posEv.has(evidences[i])?'on':'');
+  [...document.getElementById('negativeEvidenceBtns').children].forEach((b,i)=>b.className=negEv.has(evidences[i])?'no':'');
+  [...document.getElementById('forcedEvidenceBtns').children].forEach((b,i)=>b.className=forcedEv.has(forcedEvidences[i])?'forced-on':'');
+  [...document.getElementById('behaviorBtns').children].forEach((b,i)=>b.className=posBeh.has(behaviors[i][0])?'on':'');
+}
+
+function matches(g){
+  const q=document.getElementById('search').value.trim().toLowerCase();
+  if(q&&!(g.name.toLowerCase().includes(q)||g.en.toLowerCase().includes(q)))return false;
+  for(const e of posEv)if(!g.evidence.includes(e))return false;
+  for(const e of negEv)if(g.evidence.includes(e))return false;
+  for(const k of posBeh)if(!g.traits.includes(k))return false;
+  for(const f of forcedEv){if(f==="Faux Orbes"){if(g.name!=="Mimique")return false;}else if(g.forced!==f)return false;}
+  return true;
+}
+
+// ── SCORE & RADAR ─────────────────────────────────────────────
+function computeScore(g){let score=0,max=0;for(const e of posEv){max+=30;if(g.evidence.includes(e))score+=30;}for(const e of negEv){max+=15;if(!g.evidence.includes(e))score+=15;}for(const k of posBeh){max+=25;if(g.traits.includes(k))score+=25;}for(const f of forcedEv){max+=40;if(f==="Faux Orbes"&&g.name==="Mimique")score+=40;else if(g.forced===f)score+=40;}if(max===0)return null;return Math.round((score/max)*100);}
+function scoreColor(p){return p>=80?'#86efac':p>=50?'#facc15':'#fb7185';}
+function drawRadar(canvas,g,pct){const W=canvas.width=90,H=canvas.height=90,cx=45,cy=45,R=32;const ctx=canvas.getContext('2d');ctx.clearRect(0,0,W,H);const keys=['speed','aggro','stealth','tricky','sanity'],vals=keys.map(k=>(g.radar[k]||1)/5),N=5,step=(Math.PI*2)/N,start=-Math.PI/2;for(let r=1;r<=5;r++){ctx.beginPath();for(let i=0;i<N;i++){const a=start+i*step;ctx.lineTo(cx+Math.cos(a)*(R*r/5),cy+Math.sin(a)*(R*r/5));}ctx.closePath();ctx.strokeStyle='rgba(255,255,255,.07)';ctx.lineWidth=1;ctx.stroke();}for(let i=0;i<N;i++){const a=start+i*step;ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(cx+Math.cos(a)*R,cy+Math.sin(a)*R);ctx.strokeStyle='rgba(255,255,255,.1)';ctx.lineWidth=1;ctx.stroke();}const col=pct!=null?scoreColor(pct):'#7dd3fc';ctx.beginPath();for(let i=0;i<N;i++){const a=start+i*step,v=vals[i];if(i===0)ctx.moveTo(cx+Math.cos(a)*R*v,cy+Math.sin(a)*R*v);else ctx.lineTo(cx+Math.cos(a)*R*v,cy+Math.sin(a)*R*v);}ctx.closePath();ctx.fillStyle=col+'40';ctx.fill();ctx.strokeStyle=col;ctx.lineWidth=1.5;ctx.stroke();}
+
+function scoreAdvice(list){
+  if(list.length===0)return "Aucune entité. Retire un filtre contradictoire.";
+  if(list.length===1)return "Conclusion : "+list[0].name+". Vérifie Mimique si faux orbes.";
+  const remEvs=evidences.filter(e=>list.some(g=>g.evidence.includes(e))&&list.some(g=>!g.evidence.includes(e)));
+  const prioBeh=behaviors.filter(([k])=>list.some(g=>g.traits.includes(k))&&list.some(g=>!g.traits.includes(k))).map(x=>x[1]);
+  let msg="Prochain test : ";
+  if(prioBeh.length)msg+=prioBeh.slice(0,2).join(" / ");
+  else if(remEvs.length)msg+="chercher "+remEvs.slice(0,2).join(" / ");
+  else msg+="observer une chasse (vitesse, LOS, cachette).";
+  if(list.some(g=>g.name==="Mimique"))msg+=" ⚠ Mimique possible.";
+  const dangerous=list.filter(g=>g.danger);
+  if(dangerous.length)msg+=" 🔴 "+dangerous.map(g=>g.name).join(", ")+" — chasse tôt !";
+  return msg;
+}
+
+// ── CONCLUSION FLOTTANTE ──────────────────────────────────────
+function updateConclusion(list,scored){
+  const bar=document.getElementById('conclusion-bar');
+  if(list.length===0||list.length>3){bar.style.display='none';return;}
+  const inner=document.getElementById('conclusion-inner');
+  const nameEl=document.getElementById('conclusion-name');
+  const actionEl=document.getElementById('conclusion-action');
+  const ficheBtn=document.getElementById('conclusion-fiche-btn');
+  const compareBtn=document.getElementById('conclusion-compare-btn');
+  if(list.length===1){
+    const g=list[0];
+    inner.className='conclusion-inner'+(g.danger?' danger-c':'');
+    nameEl.textContent=g.icon+' '+g.name;
+    actionEl.textContent=g.huntAction;
+    ficheBtn.onclick=()=>openModal(g.name);
+    compareBtn.style.display='none';
+  } else {
+    inner.className='conclusion-inner two';
+    nameEl.textContent=list.map(g=>g.icon+g.name).join(' ou ');
+    actionEl.textContent='Affine les filtres pour conclure';
+    compareBtn.style.display=list.length===2?'':'none';
+    if(list.length===2){compareBtn.onclick=()=>openCompare();ficheBtn.style.display='none';}
+    else ficheBtn.style.display='none';
+  }
+  bar.style.display='block';
+}
+
+// ── COMPARATEUR ───────────────────────────────────────────────
+function openCompare(){
+  const list=ghosts.filter(matches).slice(0,2);
+  if(list.length<2)return;
+  const [a,b]=list;
+  const diffItems=[
+    {label:'Preuves',va:a.evidence.join(', '),vb:b.evidence.join(', ')},
+    {label:'Seuil',va:a.threshold,vb:b.threshold},
+    {label:'Vitesse',va:a.speed,vb:b.speed},
+    {label:'Forcée',va:a.forced||'—',vb:b.forced||'—'},
+    {label:'Survie',va:a.huntAction,vb:b.huntAction},
+    {label:'Test clé',va:a.tests,vb:b.tests},
+  ];
+  // Différences uniques de traits
+  const onlyA=a.traits.filter(t=>!b.traits.includes(t));
+  const onlyB=b.traits.filter(t=>!a.traits.includes(t));
+  if(onlyA.length||onlyB.length)diffItems.push({label:'Traits uniques',va:onlyA.join(', ')||'—',vb:onlyB.join(', ')||'—'});
+  const diffHtml=diffItems.map(d=>`<div class="diff-row-item"><span class="diff-label">${d.label}</span><span class="diff-a">${d.va}</span><span class="diff-b">${d.vb}</span></div>`).join('');
+  document.getElementById('compare-content').innerHTML=`
+    <div class="compare-grid">
+      <div class="compare-col"><h3>${a.icon} ${a.name}</h3><div style="font-size:11px;color:var(--muted);">${a.notes}</div></div>
+      <div class="compare-col"><h3>${b.icon} ${b.name}</h3><div style="font-size:11px;color:var(--muted);">${b.notes}</div></div>
+    </div>
+    <div class="compare-diff"><h4>Différences clés</h4><div style="display:flex;gap:6px;font-size:10px;font-weight:700;color:var(--muted);padding:2px 0;"><span style="min-width:80px;"></span><span style="flex:1;color:var(--accent);">${a.name}</span><span style="flex:1;color:var(--warn);">${b.name}</span></div>${diffHtml}</div>`;
+  document.getElementById('compare-overlay').style.display='block';
+}
+
+// ── RENDER ────────────────────────────────────────────────────
+function render(){
+  updateButtons();updateProofIndicator();
+  const allMatches=ghosts.filter(matches);
+  const scored=allMatches.map(g=>({g,pct:computeScore(g)}));
+  if(sortMode==='score')scored.sort((a,b)=>(b.pct??-1)-(a.pct??-1));
+  else if(sortMode==='danger')scored.sort((a,b)=>(b.g.danger?1:0)-(a.g.danger?1:0)||(b.pct??-1)-(a.pct??-1));
+  else scored.sort((a,b)=>a.g.name.localeCompare(b.g.name,'fr'));
+  const topPct=scored.length?scored[0].pct:null;
+  document.getElementById('count').textContent=allMatches.length;
+  document.getElementById('advice').textContent=scoreAdvice(allMatches);
+  document.getElementById('compare-btn').style.display=allMatches.length===2?'':'none';
+  updateConclusion(allMatches,scored);
+  buildChecklist();buildCoach();
+  const out=document.getElementById('results');
+  const newIds=new Set(allMatches.map(g=>g.name));
+  [...out.children].forEach(el=>{const name=el.dataset.name;if(name&&!newIds.has(name)){el.classList.add('removing');setTimeout(()=>el.remove(),180);}});
+  scored.forEach(({g,pct})=>{
+    const isTop=pct!==null&&pct===topPct&&pct>=60&&scored.length>1;
+    let el=out.querySelector(`[data-name="${g.name}"]`);
+    if(!el){el=document.createElement('div');el.dataset.name=g.name;out.appendChild(el);}
+    el.className='ghost'+(g.danger?' danger':'')+(isTop&&!g.danger?' top-pick':'');
+    const badge=g.danger?'<span class="badge-danger">⚡ DANGER</span>':isTop?'<span class="badge-top">★ Probable</span>':'';
+    const col=pct!=null?scoreColor(pct):'#7dd3fc';
+    const canvasId='r-'+g.name.replace(/[^a-z]/gi,'_');
+    let scoreHtml=pct!=null?`<div class="score-bar-wrap"><div class="score-label"><span style="color:${col};font-weight:700;">Fiabilité ${pct}%</span><button class="small" style="padding:2px 6px;min-height:24px;font-size:10px;" onclick="openModal('${g.name}')">📋</button></div><div class="score-bar"><div class="score-fill" id="sf-${g.name.replace(/[^a-z]/gi,'_')}" style="background:${col};"></div></div></div>`:`<div style="text-align:right;margin:2px 0;"><button class="small" style="padding:2px 6px;min-height:24px;font-size:10px;" onclick="openModal('${g.name}')">📋 Fiche</button></div>`;
+    el.innerHTML=`${badge}<div style="display:flex;gap:6px;">
+      <div style="flex:1">
+        <div class="ghost-name"><span style="margin-right:3px;">${g.icon}</span>${g.name} <span class="ghost-en">(${g.en})</span></div>
+        <div class="tags">${g.evidence.map(e=>`<span class="tag ev">${e}</span>`).join('')}${g.forced?`<span class="tag forced">Forcée:${g.forced}</span>`:''}</div>
+        ${scoreHtml}
+        <div class="kpi"><div><b>Seuil</b>${g.threshold}</div><div><b>Vitesse</b>${g.speed}</div></div>
+        ${compact?'':`<p class="test" style="margin:4px 0 1px;"><b>Test :</b> ${g.tests}</p><p class="note"><b>Notes :</b> ${g.notes}</p>`}
+      </div>
+      <canvas class="radar" id="${canvasId}" width="90" height="90" style="flex-shrink:0;margin-top:2px;"></canvas>
+    </div>`;
+    out.appendChild(el);
+    requestAnimationFrame(()=>{
+      const fill=document.getElementById('sf-'+g.name.replace(/[^a-z]/gi,'_'));
+      if(fill)fill.style.width=(pct||0)+'%';
+      const c=document.getElementById(canvasId);
+      if(c)drawRadar(c,g,pct);
+    });
+  });
+}
+
+// ── CHASSE ────────────────────────────────────────────────────
+function openHunt(){
+  const list=ghosts.filter(matches);
+  document.getElementById('hunt-count-label').textContent=list.length===1?'1 entité — stratégie :':list.length+' suspects :';
+  const panel=document.getElementById('hunt-list');panel.innerHTML='';
+  list.slice(0,5).forEach(g=>{const d=document.createElement('div');d.className='hunt-ghost';d.innerHTML=`<h3>${g.icon} ${g.name}</h3><div class="hunt-action">${g.huntAction}</div><div class="hunt-safe">🛡 ${g.huntSafe}</div>`;panel.appendChild(d);});
+  if(list.length>5){const m=document.createElement('div');m.style='color:var(--muted);font-size:11px;text-align:center;margin-top:5px;';m.textContent=`+${list.length-5} autres.`;panel.appendChild(m);}
+  document.getElementById('post-hunt-form').style.display='none';
+  postData={speed:null,hide:null,dur:null};
+  document.getElementById('hunt-overlay').style.display='block';
+  resetHuntTimer();startHuntTimer();
+  if(navigator.vibrate)navigator.vibrate([100,50,100]);
+}
+function endHunt(){clearInterval(huntTimerInterval);document.getElementById('post-hunt-form').style.display='block';document.querySelector('.wide.danger-btn').textContent='✕ Fermer sans noter';document.querySelector('.wide.danger-btn').onclick=closeHunt;}
+function closeHunt(){clearInterval(huntTimerInterval);document.getElementById('hunt-overlay').style.display='none';const b=document.querySelector('.wide.danger-btn');b.textContent='✓ Fin de chasse';b.onclick=endHunt;}
+function postSelect(type,val){postData[type]=val;document.querySelectorAll('.post-btn').forEach(b=>{if(b.getAttribute('onclick')===`postSelect('${type}','${val}')`)b.classList.add('selected');else if(b.getAttribute('onclick')?.startsWith(`postSelect('${type}'`))b.classList.remove('selected');});}
+function applyPostHunt(){
+  if(postData.hide==='oui')posBeh.add('trouve caché');
+  if(postData.speed==='lent')posBeh.add('très lent sans cible');
+  if(postData.speed==='rapide')posBeh.add('très rapide LOS');
+  const parts=[];if(postData.speed)parts.push('vitesse:'+postData.speed);if(postData.hide)parts.push('cachette:'+postData.hide);if(postData.dur)parts.push('durée:'+postData.dur);
+  if(parts.length)timeline.push({time:currentTime(),txt:'🚨 Chasse — '+parts.join(', '),id:Date.now()});
+  renderTimeline();saveState();render();closeHunt();
+}
+
+// ── MODAL FICHE ───────────────────────────────────────────────
+function openModal(name){const g=ghosts.find(x=>x.name===name);if(!g)return;document.getElementById('modal-content').innerHTML=`<h2>${g.icon} ${g.name}</h2><div style="color:var(--muted);font-size:12px;margin-bottom:7px;">${g.en}</div><div class="modal-kpi"><div><b>Seuil</b>${g.threshold}</div><div><b>Vitesse</b>${g.speed}</div></div><div class="modal-section"><h4>Preuves</h4><div class="tags">${g.evidence.map(e=>`<span class="tag ev">${e}</span>`).join('')}${g.forced?`<span class="tag forced">Forcée:${g.forced}</span>`:''}</div></div><div class="modal-section"><h4>Test terrain</h4><p>${g.tests}</p></div><div class="modal-section"><h4>Traits</h4><div class="tags">${g.traits.map(t=>`<span class="tag">${t}</span>`).join('')}</div></div><div class="modal-section"><h4>Notes</h4><p>${g.notes}</p></div><div class="modal-section"><h4>Équipement</h4><p>${g.equipment}</p></div><div class="modal-section"><h4>Survie</h4><div class="survival"><p>${g.survival}</p></div></div><div class="modal-section"><h4>Lore</h4><p>${g.lore}</p></div>`;document.getElementById('modal-overlay').style.display='block';}
+function closeModal(e){if(!e||e.target===document.getElementById('modal-overlay'))document.getElementById('modal-overlay').style.display='none';}
+
+// ── ONGLETS ───────────────────────────────────────────────────
+function switchLeft(tab){['preuves','terrain','contexte'].forEach(t=>{document.getElementById('left-'+t).style.display=t===tab?'':'none';});[...document.querySelectorAll('.left-tab')].forEach((b,i)=>b.classList.toggle('active',['contexte','preuves','terrain'][i]===tab));if(tab==='contexte')renderHistory();}
+function switchRight(tab){['results','tree'].forEach(t=>{document.getElementById('right-'+t).style.display=t===tab?'':'none';});[...document.querySelectorAll('.pill')].forEach((b,i)=>b.classList.toggle('active',['results','tree'][i]===tab));}
+
+// ── ARBRE ─────────────────────────────────────────────────────
+const tree={q:"As-tu une preuve confirmée ?",choices:[
+  {label:"Oui — EMF 5",next:{q:"EMF 5 confirmé. 2e preuve ?",choices:[
+    {label:"Spirit Box",next:{q:"EMF 5 + Spirit Box. 3e preuve ?",choices:[{label:"Écriture → Esprit",result:"Esprit"},{label:"DOTS → Spectre",result:"Spectre"},{label:"Glacial → Les Jumeaux",result:"Les Jumeaux"},{label:"Pas de 3e",next:{q:"Comportement ?",choices:[{label:"Double activité éloignée",result:"Les Jumeaux"},{label:"Normal",result:"Esprit ou Spectre"}]}}]}},
+    {label:"UV",next:{q:"EMF 5 + UV. 3e preuve ?",choices:[{label:"Glacial",next:{q:"Courant allumé ?",choices:[{label:"Oui + accélère distance",result:"Djinn"},{label:"Non / états",result:"Gallu"}]}},{label:"Orbes → Obake",result:"Obake"},{label:"Écriture → Myling",result:"Myling"},{label:"DOTS → Goryo",result:"Goryo"}]}},
+    {label:"Glacial",next:{q:"EMF 5 + Glacial. 3e ?",choices:[{label:"Écriture → Ombre",result:"Ombre"},{label:"DOTS → Oni",result:"Oni"},{label:"Spirit Box → Jumeaux",result:"Les Jumeaux"},{label:"UV → Djinn/Gallu",result:"Djinn ou Gallu"}]}},
+    {label:"Orbes",next:{q:"EMF 5 + Orbes. 3e ?",choices:[{label:"DOTS",next:{q:"Phases calme/agressif ?",choices:[{label:"Oui → Obambo",result:"Obambo (danger !)"},{label:"Non → Raiju",result:"Raiju"}]}},{label:"UV → Obake",result:"Obake"},{label:"Orbes + Spirit Box → Dayan",result:"Dayan"}]}},
+    {label:"DOTS",next:{q:"EMF 5 + DOTS. 3e ?",choices:[{label:"UV → Goryo",result:"Goryo"},{label:"Orbes → Raiju/Obambo",result:"Raiju ou Obambo"},{label:"Glacial → Oni",result:"Oni"}]}},
+    {label:"0 preuve",next:{q:"Comportement ?",choices:[{label:"Accélère appareils",result:"Raiju"},{label:"Phases calme/agressif",result:"Obambo (danger !)"},{label:"Réagit aux pas",result:"Kormos"},{label:"États affaibli/enragé",result:"Gallu"}]}}
+  ]}},
+  {label:"Oui — Spirit Box",next:{q:"Spirit Box. 2e preuve ?",choices:[
+    {label:"UV",next:{q:"Spirit Box + UV. 3e ?",choices:[{label:"Écriture → Poltergeist",result:"Poltergeist"},{label:"DOTS → Fantôme",result:"Fantôme"},{label:"Glacial → Mimique",result:"Mimique (faux orbes !)"},{label:"Orbes → Aswang",result:"Aswang"}]}},
+    {label:"Orbes",next:{q:"Spirit Box + Orbes. 3e ?",choices:[{label:"Écriture → Cauchemar",result:"Cauchemar"},{label:"DOTS → Yokai",result:"Yokai"},{label:"Glacial → Onryo",result:"Onryo"},{label:"EMF 5 → Dayan",result:"Dayan"}]}},
+    {label:"Écriture",next:{q:"Spirit Box + Écriture. 3e ?",choices:[{label:"Glacial → Moroi",result:"Moroi (danger !)"},{label:"DOTS",next:{q:"Comportement ?",choices:[{label:"Me trouve caché",result:"Déogène (danger !)"},{label:"Réagit mouvement",result:"Dayan"}]}},{label:"Orbes → Cauchemar",result:"Cauchemar"}]}},
+    {label:"DOTS",next:{q:"Spirit Box + DOTS. 3e ?",choices:[{label:"UV → Fantôme",result:"Fantôme"},{label:"Orbes → Yokai",result:"Yokai"},{label:"Écriture → Déogène/Dayan",result:"Déogène ou Dayan"}]}},
+    {label:"Glacial",next:{q:"Spirit Box + Glacial. 3e ?",choices:[{label:"UV → Mimique",result:"Mimique"},{label:"Orbes → Onryo",result:"Onryo"},{label:"Écriture → Moroi",result:"Moroi (danger !)"},{label:"EMF 5 → Jumeaux",result:"Les Jumeaux"}]}},
+    {label:"0 preuve",next:{q:"Comportement ?",choices:[{label:"Me trouve caché",result:"Déogène (danger !)"},{label:"Réagit voix",result:"Yokai"},{label:"Vitesse monte",result:"Moroi (danger !)"},{label:"Comportements changeants",result:"Mimique"}]}}
+  ]}},
+  {label:"Oui — UV",next:{q:"UV. 2e preuve ?",choices:[
+    {label:"Orbes",next:{q:"UV + Orbes. 3e ?",choices:[{label:"DOTS → Banshee",result:"Banshee"},{label:"Glacial → Hantu",result:"Hantu (souffle !)"},{label:"EMF 5 → Obake",result:"Obake"}]}},
+    {label:"DOTS",next:{q:"UV + DOTS. 3e ?",choices:[{label:"Orbes → Banshee",result:"Banshee"},{label:"EMF 5 → Goryo",result:"Goryo"},{label:"Spirit Box → Fantôme",result:"Fantôme"}]}},
+    {label:"Glacial",next:{q:"UV + Glacial. 3e ?",choices:[{label:"EMF 5 → Djinn/Gallu",result:"Djinn ou Gallu"},{label:"Écriture → Démon",result:"Démon (danger !)"},{label:"Orbes → Hantu",result:"Hantu"},{label:"Spirit Box → Mimique",result:"Mimique"}]}},
+    {label:"Écriture",next:{q:"UV + Écriture. 3e ?",choices:[{label:"Glacial → Démon",result:"Démon (danger !)"},{label:"EMF 5 → Myling",result:"Myling"},{label:"Spirit Box → Poltergeist",result:"Poltergeist"}]}},
+    {label:"Écriture + DOTS → Obambo",result:"Obambo (danger !)"}
+  ]}},
+  {label:"Oui — Orbes",next:{q:"Orbes. 2e preuve ?",choices:[
+    {label:"Écriture",next:{q:"Orbes + Écriture. 3e ?",choices:[{label:"Glacial → Revenant",result:"Revenant"},{label:"DOTS → Thayé",result:"Thayé"},{label:"Spirit Box → Cauchemar",result:"Cauchemar"},{label:"UV + DOTS → Obambo",result:"Obambo (danger !)"}]}},
+    {label:"Glacial",next:{q:"Orbes + Glacial. 3e ?",choices:[{label:"DOTS → Yurei",result:"Yurei"},{label:"Écriture → Revenant",result:"Revenant"},{label:"Spirit Box → Onryo",result:"Onryo"},{label:"UV → Hantu",result:"Hantu"}]}},
+    {label:"DOTS",next:{q:"Orbes + DOTS. 3e ?",choices:[{label:"Glacial → Yurei",result:"Yurei"},{label:"Écriture → Thayé",result:"Thayé"},{label:"Spirit Box → Yokai",result:"Yokai"},{label:"EMF 5 → Raiju/Obambo",result:"Raiju ou Obambo"},{label:"UV → Banshee",result:"Banshee"}]}},
+    {label:"Spirit Box + EMF 5 → Dayan",result:"Dayan"}
+  ]}},
+  {label:"Oui — Écriture",next:{q:"Écriture. 2e preuve ?",choices:[
+    {label:"Glacial",next:{q:"Écriture + Glacial. 3e ?",choices:[{label:"Orbes → Revenant",result:"Revenant"},{label:"EMF 5 → Ombre",result:"Ombre"},{label:"UV → Démon",result:"Démon (danger !)"},{label:"DOTS → Aswang",result:"Aswang"}]}},
+    {label:"DOTS",next:{q:"Écriture + DOTS. 3e ?",choices:[{label:"Orbes → Thayé",result:"Thayé"},{label:"Spirit Box → Déogène/Dayan",result:"Déogène ou Dayan"},{label:"Glacial → Aswang",result:"Aswang"},{label:"UV → Obambo",result:"Obambo (danger !)"}]}},
+    {label:"Spirit Box",next:{q:"Écriture + Spirit Box. 3e ?",choices:[{label:"Glacial → Moroi",result:"Moroi (danger !)"},{label:"DOTS → Déogène/Dayan",result:"Déogène ou Dayan"},{label:"Orbes → Cauchemar",result:"Cauchemar"}]}}
+  ]}},
+  {label:"Oui — DOTS",next:{q:"DOTS. 2e preuve ?",choices:[
+    {label:"EMF 5",next:{q:"DOTS + EMF 5. 3e ?",choices:[{label:"UV → Goryo",result:"Goryo"},{label:"Glacial → Oni",result:"Oni"},{label:"Orbes → Raiju/Obambo",result:"Raiju ou Obambo"}]}},
+    {label:"Orbes",next:{q:"DOTS + Orbes. 3e ?",choices:[{label:"Glacial → Yurei",result:"Yurei"},{label:"Écriture → Thayé",result:"Thayé"},{label:"Spirit Box → Yokai",result:"Yokai"},{label:"UV → Banshee",result:"Banshee"}]}},
+    {label:"Spirit Box",next:{q:"DOTS + Spirit Box. 3e ?",choices:[{label:"UV → Fantôme",result:"Fantôme"},{label:"Écriture → Déogène/Dayan",result:"Déogène ou Dayan"},{label:"Orbes → Yokai",result:"Yokai"}]}},
+    {label:"Glacial",next:{q:"DOTS + Glacial. 3e ?",choices:[{label:"Orbes → Yurei",result:"Yurei"},{label:"EMF 5 → Oni",result:"Oni"},{label:"Écriture → Aswang",result:"Aswang"}]}},
+    {label:"UV + Écriture → Obambo",result:"Obambo (danger !)"}
+  ]}},
+  {label:"Oui — Glacial",next:{q:"Glacial. 2e preuve ?",choices:[
+    {label:"Orbes",next:{q:"Glacial + Orbes. 3e ?",choices:[{label:"DOTS → Yurei",result:"Yurei"},{label:"UV → Hantu",result:"Hantu"},{label:"Spirit Box → Onryo",result:"Onryo"},{label:"Écriture → Revenant",result:"Revenant"}]}},
+    {label:"Écriture",next:{q:"Glacial + Écriture. 3e ?",choices:[{label:"UV → Démon",result:"Démon (danger !)"},{label:"EMF 5 → Ombre",result:"Ombre"},{label:"Orbes → Revenant",result:"Revenant"},{label:"Spirit Box → Moroi",result:"Moroi (danger !)"},{label:"DOTS → Aswang",result:"Aswang"}]}},
+    {label:"EMF 5",next:{q:"Glacial + EMF 5. 3e ?",choices:[{label:"UV → Djinn/Gallu",result:"Djinn ou Gallu"},{label:"DOTS → Oni",result:"Oni"},{label:"Spirit Box → Jumeaux",result:"Les Jumeaux"},{label:"Écriture → Ombre",result:"Ombre"}]}}
+  ]}},
+  {label:"0 preuve — comportement ?",next:{q:"Signature la plus distincte ?",choices:[
+    {label:"Me trouve caché",result:"Déogène — kite-le !"},
+    {label:"Sel jamais perturbé",result:"Spectre — confirme avec sel"},
+    {label:"Souffle visible",result:"Hantu — zones chaudes"},
+    {label:"Change modèle",result:"Obake — empreinte 6 doigts"},
+    {label:"Très lent / fusée LOS",result:"Revenant — reste caché"},
+    {label:"Accélère près appareils",result:"Raiju — éteins équipement"},
+    {label:"Cri parabolique",result:"Banshee — identifie cible"},
+    {label:"Faux orbes + incohérence",result:"Mimique"},
+    {label:"Chasse dès 70 %+",result:"Démon — crucifix priorité"},
+    {label:"Phases calme/agressif",result:"Obambo — chasse courte"}
+  ]}}
+]};
+
+let treePath=[],treeNode=tree;
+function treeReset(){treePath=[];treeNode=tree;treeRender();}
+function treeStep(c){treePath.push({q:treeNode.q,label:c.label});if(c.result){treeShowResult(c.result);return;}treeNode=c.next;treeRender();}
+function treeRender(){
+  const bc=treePath.map(s=>`<b>${s.label}</b>`).join(' → ');
+  document.getElementById('tree-breadcrumb').innerHTML=bc?'Chemin : '+bc:'Réponds aux questions.';
+  document.getElementById('tree-question').textContent=treeNode.q;
+  document.getElementById('tree-result-box').innerHTML='';
+  const cc=document.getElementById('tree-choices');cc.innerHTML='';
+  treeNode.choices.forEach(c=>{const b=document.createElement('button');b.className='tree-choice';b.textContent=c.label;b.onclick=()=>treeStep(c);cc.appendChild(b);});
+}
+function treeShowResult(result){
+  const isDanger=result.toLowerCase().includes('danger');
+  const g=ghosts.find(x=>result.includes(x.name));
+  document.getElementById('tree-choices').innerHTML='';
+  document.getElementById('tree-question').textContent='';
+  document.getElementById('tree-breadcrumb').innerHTML='Chemin : '+treePath.map(s=>`<b>${s.label}</b>`).join(' → ');
+  const extra=g?`<p>🛡 ${g.survival}</p><p style="margin-top:4px;color:var(--muted);font-size:10px;">Équipement : ${g.equipment}</p>`:'';
+  document.getElementById('tree-result-box').innerHTML=`<div class="tree-result${isDanger?' danger-res':''}"><h3>→ ${result}</h3>${extra}</div>`;
+}
+
+function resetAll(){posEv.clear();negEv.clear();posBeh.clear();forcedEv.clear();document.getElementById('search').value='';maxProofs=3;sanity=100;document.getElementById('sanity-slider').value=100;cntCandle=0;cntHunt=0;document.getElementById('cnt-candle').textContent=0;document.getElementById('cnt-hunt').textContent=0;timeline=[];checklistState={};renderTimeline();updateDiffBtns();updateSanityDisplay();saveState();render();}
+function toggleCompact(){compact=!compact;saveState();render();}
+init();
+</script>
+</body>
+</html>
